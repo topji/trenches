@@ -78,13 +78,12 @@ async function main() {
 
   // 3. Sign the order (EIP-712)
   const td = toViemTypedData(quote.evm.orderTypedData);
-  const userSignature = await account.signTypedData({
-    domain: td.domain as never, types: td.types as never, primaryType: td.primaryType as never, message: td.message as never,
-  });
+  type TypedDataArg = Parameters<typeof account.signTypedData>[0];
+  const userSignature = await account.signTypedData(td as unknown as TypedDataArg);
   let permitFields = {};
   if (quote.evm.permitTypedData) {
     const ptd = toViemTypedData(quote.evm.permitTypedData);
-    const evmPermitSignature = await account.signTypedData({ domain: ptd.domain as never, types: ptd.types as never, primaryType: ptd.primaryType as never, message: ptd.message as never });
+    const evmPermitSignature = await account.signTypedData(ptd as unknown as TypedDataArg);
     permitFields = { evmPermitTypedData: quote.evm.permitTypedData, evmPermitSignature };
   }
 

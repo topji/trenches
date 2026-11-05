@@ -105,10 +105,13 @@ export function buildQuoteRequest(input: BuildQuoteInput): QuoteRequest {
   }
 }
 
-/** Fields that must NOT be echoed on POST /order (flash-mcp orderTradeFieldsFromQuote). */
+/**
+ * Fields that must NOT be echoed on POST /order (flash-mcp orderTradeFieldsFromQuote).
+ * `attachedBracket` is also dropped: the submit shape carries its own signature fields.
+ */
 export function toSubmitFields(q: QuoteRequest) {
-  const { durationSeconds: _d, expireTime: _e, evmUsePermit2: _p, ...rest } = q;
-  void _d; void _e; void _p;
+  const { durationSeconds: _d, expireTime: _e, evmUsePermit2: _p, attachedBracket: _b, ...rest } = q;
+  void _d; void _e; void _p; void _b;
   return rest;
 }
 
