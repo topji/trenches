@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --bg: #0e1726;
+  --bg-raised: #16233a;
+  --bg-sunken: #0a111d;
+  --line: #243551;
+  --text: #eef3fa;
+  --text-muted: #8fa3c0;
+  --text-faint: #5c6f8c;
+  --accent: #ff7a1a;
+  --accent-ink: #1a0b00;
+  --gain: #34d399;
+  --loss: #fb5d7a;
+  --warn: #f5c04a;
+  --rank-2: #c9d3e3;
+  --rank-3: #c8955a;
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--text);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg text-text font-sans text-[16px] leading-[1.5] antialiased;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  table {
+    border-collapse: collapse;
+  }
+}
+
+@layer components {
+  /* Scoreboard figures: Archivo expanded, heavy, tabular. The one memorable treatment. */
+  .font-scoreboard {
+    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-variation-settings: "wdth" 125;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .text-hero {
+    @apply text-[48px] lg:text-[72px] tracking-[-0.02em];
+  }
+  .text-h1 {
+    @apply text-[28px] lg:text-[36px] font-extrabold leading-[1.1] tracking-[-0.01em];
+  }
+  .text-h2 {
+    @apply text-[20px] lg:text-[24px] font-semibold leading-[1.2];
+  }
+  .text-figure {
+    @apply text-[20px] lg:text-[24px];
+  }
+  .text-small {
+    @apply text-[13px] font-medium leading-[1.4];
+  }
+  .text-mono {
+    @apply font-mono text-[13px] leading-[1.5];
+  }
+  .panel {
+    @apply bg-raised border border-line rounded-panel;
+  }
+  .hash-block {
+    @apply bg-sunken border border-line rounded px-3 py-2 text-mono break-all;
+  }
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot {
+  animation: live-pulse 1s ease-in-out infinite;
+}
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.row-in {
+  animation: row-in 240ms ease-out both;
+}
+@keyframes rank-flash {
+  from { background-color: color-mix(in srgb, var(--accent) 10%, transparent); }
+  to { background-color: transparent; }
+}
+.rank-flash {
+  animation: rank-flash 1.5s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot, .row-in, .rank-flash {
+    animation: none !important;
+  }
+}

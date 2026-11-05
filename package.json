@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "license": "MIT",
   "packageManager": "pnpm@9.15.0",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "pnpm --filter @trenches/web dev",
     "dev:worker": "pnpm --filter @trenches/worker dev",
@@ -17,9 +19,11 @@
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
+    "playwright": "^1.48.0",
     "prettier": "^3.3.3",
     "tsx": "^4.19.0",
     "typescript": "^5.6.3",
     "vitest": "^2.1.0"
-  }
+  },
+  "type": "module"
 }
