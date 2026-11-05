@@ -15,14 +15,21 @@
     "lint": "pnpm -r run lint",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "smoke": "pnpm smoke:flash; pnpm smoke:arkiv; pnpm smoke:hedera",
+    "smoke:flash": "tsx scripts/flash-smoke.ts",
+    "smoke:arkiv": "tsx scripts/arkiv-smoke.ts",
+    "smoke:hedera": "tsx scripts/hedera-smoke.ts",
+    "screenshot": "tsx scripts/screenshot.ts"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
+    "dotenv": "^16.4.5",
     "playwright": "^1.48.0",
     "prettier": "^3.3.3",
     "tsx": "^4.19.0",
     "typescript": "^5.6.3",
+    "viem": "^2.21.0",
     "vitest": "^2.1.0"
   },
   "type": "module"
