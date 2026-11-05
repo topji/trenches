@@ -1,5 +1,26 @@
 # PROGRESS.md — newest first
 
+## Thu 5 Nov 2026, 16:10 IST — Step 2 code done; smoke runs blocked on `.env`
+
+**Works**
+- `packages/flash`: zod-validated client (quote, order, get/list orders, cancel, search, balances), `buildQuoteRequest` for market / dca→twap / bracket→market+attachedBracket / limit / twap, EIP-712 normalisation for viem, Flash fill → domain fill. **Live read-only probe with the public dev key passed:** search, and $3 market / TWAP(3 buckets) / market+bracket quotes all parsed; integrator fee 30 bps shows as `estimatedFeeNotional: "0.009"`.
+- `packages/arkiv`: SDK 1.0 schemas (`trenches.trench|entry|lb|payout|profile|sponsorship`), repo with update-in-place (`patchEntity`) and one-tx leaderboard rewrite (`executeBatch` creates+patches+deletes), expiry = end + 30 d in blocks capped at the 182-day max. **Keyless RPC read passed** (block timing).
+- `packages/hedera`: `@hiero-ledger/sdk` client, DER/ECDSA key parsing, AES-256-GCM escrow-key envelope, escrow account (unlimited auto-association), demo token, associate, multi-party HTS transfer, HCS topic + 1 KB envelope, HIP-423 long-term scheduled transfer, Mirror Node reads, HashScan links. **Mirror read passed** (testnet USDC 0.0.429274).
+- `packages/worldid`: IDKit 4.x result schemas, `signRpContext` (idkit-core signing), nonce registry, `verifyIdKitResult` (forwards unchanged to `/api/v4/verify/{rp_id}`, enforces env/action/signal/credential), salted nullifier hash. `WORLD_MOCK=true` accepts only results carrying a server-issued single-use nonce.
+- `scripts/flash-smoke.ts`, `arkiv-smoke.ts`, `hedera-smoke.ts`: each exits 2 "NEEDS ENV" today after its read-only check; 0 PASS / 1 FAIL once keys exist. 68 unit tests green.
+
+**Decisions made**
+- World action stays `join-trench` (one Portal action). Once-per-Trench is our unique index on (trenchId, nullifierHash); the signal is `${trenchId}:${wallet}` so a proof is bound to both the Trench and the caller wallet. (In 4.0 the signal does not change the nullifier.)
+- `FLASH_FEE_RECIPIENT` dropped: Flash fees accrue to the API-key owner's Definitive account.
+- Scheduled Transaction plan: HIP-423 long-term schedule with `waitForExpiry=true`, escrow key pre-signed at creation. The smoke script falls back to a plain transfer and says so if the network rejects it.
+- DCA UI = Flash TWAP; legs → `twapBucketCount`, legs×interval → `durationSeconds` (floored at 300 s).
+
+**Blocked (not failures)**
+- Flash gate: no fill yet — needs `DEMO_TRADER_A_KEY` + `FLASH_API_KEY`. The quote → sign → submit → poll path is written and typechecked; it runs the moment the key lands.
+- Arkiv write, Hedera writes: need the keys listed in `.env.example`.
+
+**Next:** when `.env` lands → `pnpm smoke` and log every explorer link here. Then step 3 on command.
+
 ## Thu 5 Nov 2026, 14:40 IST — Step 1 done: foundation and domain core
 
 **Works**
