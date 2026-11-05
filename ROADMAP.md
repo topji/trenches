@@ -1,6 +1,6 @@
 # Trenches — Build Roadmap
 
-Ten steps. Each step is built only when the builder says "go step N". Each step ends with a runnable app, green tests for what it touches, and a push to `main`. Nothing from a later step is started early.
+Ten steps. Each step is built only when the builder says "go step N" (or "go steps N and M, then stop" to batch while away). Each step ends with a runnable app and green tests for what it touches. Every commit is pushed to `main` immediately, not only at the end of a step. Nothing from a later step is started early.
 
 Timeline anchor: build started Thu 5 Nov 2026, 13:00 IST. Flash gate is Thu 17:00 IST (decided in step 2). Submission is Fri evening; judging is Sat.
 
@@ -38,6 +38,8 @@ Needs from the builder: nothing.
 
 ## Step 2 — Rails proof (smoke scripts, the Flash gate)
 **Goal:** one real transaction on each rail before any feature is built.
+
+Order inside the step: Flash client and `flash-smoke.ts` first, then Arkiv, then Hedera, then World. The gate is Flash; the other two can slip past 17:00 without consequence.
 
 Deliverables
 - `packages/flash`: quote, place order, get order, zod schemas from the docs; platform fee attached.
@@ -140,7 +142,7 @@ Deliverables
 - Deploy web to Vercel and worker + Postgres to Railway; live URL checked on a phone.
 
 Done when: `pnpm verify` green locally and against the deployed URL.
-Needs from the builder: Vercel and Railway projects with env set; domain `jointrenches.xyz` if ready.
+Needs from the builder: Vercel and Railway projects with env set. Point `jointrenches.xyz` at Vercel **today** (even to a placeholder) so DNS propagation is not a Friday-evening surprise.
 
 ## Step 10 — Paperwork, video, submission
 **Goal:** every sponsor checklist line is satisfied and findable in under five minutes.
@@ -153,11 +155,13 @@ Deliverables
 - Final `PROGRESS.md` entry "Ready to submit" with every link the ETHGlobal form needs.
 
 Done when: the submission checklist in PRD §9 is fully ticked.
-Needs from the builder: record the video, post it, fill the ETHGlobal showcase with three partner picks.
+Needs from the builder: confirm the ETHGlobal submission deadline at the venue today. If it closes before Fri 20:00 IST, steps 9–10 move forward and step 8 is shortened: Limit/TWAP and the sponsor flow are the first cuts. Then record the video, post it, fill the ETHGlobal showcase with three partner picks.
 
 ---
 
 ## Suggested pacing
+
+The builder is away at workshops (Hedera 15:30, World 17:30, evening side event). Batch steps before leaving: "go step 2" at ~15:15; "go steps 3 and 4, then stop" at ~17:30; "go steps 5 and 6, then stop" before the evening event.
 
 | When (IST) | Steps |
 |---|---|
