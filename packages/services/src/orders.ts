@@ -263,6 +263,13 @@ export async function listOrdersForTrader(trenchId: string, trader: Address): Pr
 /* ---------- worker: pollOrders ---------- */
 
 const OPEN_STATUSES = ["pending", "open", "partial"];
+
+/** "REASON_ORDER_REJECTED_AT_VENUE" → "Order rejected at venue". */
+export function humanReason(reason: string | null | undefined): string | null {
+  if (!reason) return null;
+  const words = reason.replace(/^REASON_/, "").toLowerCase().split("_");
+  return words.length ? words[0]!.charAt(0).toUpperCase() + words[0]!.slice(1) + (words.length > 1 ? " " + words.slice(1).join(" ") : "") : null;
+}
 let backoffUntil = 0;
 let backoffMs = 0;
 
@@ -321,8 +328,10 @@ export async function pollOrders(): Promise<PollResult> {
       }
 
       const status = toDomainOrderStatus(order.status);
-      if (status !== o.status || (order.closeReason && order.closeReason !== o.error)) {
-        await db.update(orders).set({ status, error: order.closeReason ?? null, updatedAt: new Date().toISOString() }).where(eq(orders.id, o.id));
+      // Only a failed / cancelled order carries its close reason as the user-facing error.
+      const error = status === "failed" || status === "cancelled" ? humanReason(order.closeReason) : null;
+      if (status !== o.status || error !== o.error) {
+        await db.update(orders).set({ status, error, updatedAt: new Date().toISOString() }).where(eq(orders.id, o.id));
         if (!OPEN_STATUSES.includes(status)) closed += 1;
       }
     } catch (e) {
