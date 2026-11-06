@@ -95,7 +95,7 @@ test("F1.1 + F1.3 + F1.4 create, fund, go live", async ({ page }, testInfo) => {
 
   // F1.4: once startAt passes, one worker tick flips funded → live (the cron does this every 30 s)
   await page.waitForTimeout(Math.max(0, start.getTime() + 1000 - Date.now()));
-  const tick = await page.request.post("/api/dev/tick", { data: {} });
+  const tick = await page.request.post("/api/dev/tick", { data: { trenchId } });
   const tickBody = (await tick.json()) as { transitions: { trenchId: string; to: string }[] };
   expect(tickBody.transitions.some((t) => t.trenchId === trenchId && t.to === "live")).toBe(true);
   await page.reload();

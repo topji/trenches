@@ -94,7 +94,7 @@ export async function createTrench(raw: unknown, adminAddress: Address): Promise
   // 2. Arkiv: the public record. A failure is stored as pending and surfaced, never hidden.
   let arkivResult: CreateResult["arkiv"];
   try {
-    const r = await arkiv.createTrench(trench);
+    const r = await withArkivRetry("createTrench", () => arkiv.createTrench(trench));
     arkivResult = { entityKey: r.entityKey, txHash: r.txHash };
   } catch (e) {
     log.error({ trenchId: id, err: (e as Error).message }, "arkiv createTrench failed");
@@ -160,11 +160,11 @@ async function persistTrench(trench: Trench, arkivEntityKey: string | null): Pro
     .where(eq(trenches.id, trench.id));
   try {
     if (arkivEntityKey) {
-      const r = await arkiv.updateTrench(trench, arkivEntityKey as `0x${string}`);
+      const r = await withArkivRetry("updateTrench", () => arkiv.updateTrench(trench, arkivEntityKey as `0x${string}`));
       return { arkivTxHash: r.txHash };
     }
     // Entity never landed (arkivPending): create it now.
-    const r = await arkiv.createTrench(trench);
+    const r = await withArkivRetry("createTrench", () => arkiv.createTrench(trench));
     await db.update(trenches).set({ arkivEntityKey: r.entityKey, arkivTxHash: r.txHash }).where(eq(trenches.id, trench.id));
     return { arkivTxHash: r.txHash };
   } catch (e) {
@@ -214,26 +214,54 @@ export interface Transition {
   hcs: HcsRecord | { error: string };
 }
 
-/** Worker job: funded → live at startAt, live → ended at endAt. Idempotent; one pass per tick. */
-export async function activateTrenches(now = new Date()): Promise<Transition[]> {
+/** One retry for Arkiv writes: two processes (web + worker) share the writer wallet, and a nonce clash fails once. */
+export async function withArkivRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    log.warn({ label, err: (e as Error).message }, "arkiv write failed; retrying once");
+    await new Promise((r) => setTimeout(r, 2500));
+    return fn();
+  }
+}
+
+/**
+ * Worker job: funded → live at startAt, live → ended at endAt. The status flip is claimed atomically
+ * in Postgres first (UPDATE … WHERE status = … RETURNING), so the worker and the demo tick route can
+ * run at the same time without both patching Arkiv / posting to HCS for the same Trench.
+ */
+export async function activateTrenches(now = new Date(), onlyTrenchId?: string): Promise<Transition[]> {
   const { db } = services();
   const nowIso = now.toISOString();
   const out: Transition[] = [];
 
-  const toLive = await db.select().from(trenches).where(and(eq(trenches.status, "funded"), lte(trenches.startAt, nowIso)));
-  const toEnded = await db.select().from(trenches).where(and(eq(trenches.status, "live"), lte(trenches.endAt, nowIso)));
-
-  for (const [rows, to, event] of [
-    [toLive, "live", "trench.live"],
-    [toEnded, "ended", "trench.ended"],
+  for (const [from, to, event, col] of [
+    ["funded", "live", "trench.live", trenches.startAt],
+    ["live", "ended", "trench.ended", trenches.endAt],
   ] as const) {
-    for (const row of rows) {
-      const t = rowToTrench(row);
-      const next: Trench = { ...t, status: to };
-      const arkivRes = await persistTrench(next, row.arkivEntityKey);
+    const where = onlyTrenchId
+      ? and(eq(trenches.status, from), lte(col, nowIso), eq(trenches.id, onlyTrenchId))
+      : and(eq(trenches.status, from), lte(col, nowIso));
+    const claimed = await db.update(trenches).set({ status: to, updatedAt: nowIso }).where(where).returning();
+    for (const row of claimed) {
+      const t = rowToTrench(row); // row already carries the new status
+      let arkivRes: { arkivTxHash?: string; arkivError?: string } = {};
+      try {
+        if (row.arkivEntityKey) {
+          const r = await withArkivRetry("updateTrench", () => services().arkiv.updateTrench(t, row.arkivEntityKey as `0x${string}`));
+          arkivRes = { arkivTxHash: r.txHash };
+        } else {
+          const r = await withArkivRetry("createTrench", () => services().arkiv.createTrench(t));
+          await db.update(trenches).set({ arkivEntityKey: r.entityKey, arkivTxHash: r.txHash }).where(eq(trenches.id, t.id));
+          arkivRes = { arkivTxHash: r.txHash };
+        }
+      } catch (e) {
+        log.error({ trenchId: t.id, err: (e as Error).message }, "arkiv update failed");
+        arkivRes = { arkivError: (e as Error).message };
+      }
       const hcs = await recordHcs(t.id, t.hedera.topicId, event, { at: nowIso, startAt: t.startAt, endAt: t.endAt });
-      out.push({ trenchId: t.id, slug: t.slug, from: t.status, to, ...arkivRes, hcs });
-      log.info({ trenchId: t.id, slug: t.slug, from: t.status, to }, "trench status changed");
+      out.push({ trenchId: t.id, slug: t.slug, from, to, ...arkivRes, hcs });
+      log.info({ trenchId: t.id, slug: t.slug, from, to }, "trench status changed");
     }
   }
   return out;

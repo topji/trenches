@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
     if (process.env.DEMO_MODE !== "true") return NextResponse.json({ error: "Not available." }, { status: 404 });
     const body = await readJson(req);
     const now = typeof body.now === "string" ? new Date(body.now) : new Date();
-    const transitions = await activateTrenches(now);
+    const only = typeof body.trenchId === "string" ? body.trenchId : undefined;
+    const transitions = await activateTrenches(now, only);
     return NextResponse.json({ now: now.toISOString(), transitions });
   });
 }

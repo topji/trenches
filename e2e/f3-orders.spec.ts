@@ -17,11 +17,11 @@ let upcoming: CreatedTrench;
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ request }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(480_000);
   const tag = Date.now().toString(36);
   // Starts in the past (demo mode allows it) so one worker tick makes it live.
   live = await createTrenchViaApi(request, ADMIN, { name: `F3 live ${tag}`, startInMs: -60_000, durationMs: 30 * 60_000, fund: true });
-  const tick = await request.post("/api/dev/tick", { data: {} });
+  const tick = await request.post("/api/dev/tick", { data: { trenchId: live.id } });
   const body = (await tick.json()) as { transitions: { trenchId: string; to: string }[] };
   expect(body.transitions.some((t) => t.trenchId === live.id && t.to === "live")).toBe(true);
   upcoming = await createTrenchViaApi(request, ADMIN, { name: `F3 upcoming ${tag}`, startInMs: 20 * 60_000, durationMs: 30 * 60_000, fund: true });
