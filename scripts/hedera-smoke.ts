@@ -6,7 +6,8 @@
  *   pnpm smoke:hedera
  *
  * Env: HEDERA_OPERATOR_ID, HEDERA_OPERATOR_KEY (DER from the portal), HEDERA_PRIZE_TOKEN_ID (optional:
- *      blank → creates TRENCH-USDC once and prints the id to put in .env).
+ *      blank → creates TRENCH-USDC once and prints the id to put in .env), ADMIN_HEDERA_ACCOUNT_ID
+ *      (optional: blank → creates the host fee-share account once and prints the id + key to put in .env).
  * Exit codes: 0 PASS · 1 FAIL · 2 NEEDS ENV.
  */
 import "dotenv/config";
@@ -52,6 +53,17 @@ async function main() {
   const operatorBal = await mirror.tokenBalance(ctx.operatorId.toString(), tokenId);
   log(`operator token balance (mirror): ${operatorBal}`);
 
+  // 0b. Admin (host fee-share) account — step 7 needs a recipient for the Scheduled Transaction.
+  //     Unlimited auto-association, so the prize token lands without a TokenAssociate.
+  let adminId = process.env.ADMIN_HEDERA_ACCOUNT_ID?.trim() || "";
+  if (!adminId) {
+    const admin = await createEscrowAccount(ctx, "trenches admin fee-share account");
+    adminId = admin.accountId;
+    log(`created admin account ${adminId} → put ADMIN_HEDERA_ACCOUNT_ID=${adminId} in .env`, hs.tx(admin.txId));
+    log(`admin account key (store it; printed once): ${admin.privateKeyDer}`);
+  }
+  log("admin account", adminId, hs.account(adminId));
+
   // 1. Escrow account
   const escrow = await createEscrowAccount(ctx, "trenches smoke escrow");
   log("escrow account", escrow.accountId, hs.account(escrow.accountId), hs.tx(escrow.txId));
@@ -73,12 +85,12 @@ async function main() {
   ], [escrowKey], "smoke payout");
   log("payout from escrow", hs.tx(payoutTx));
 
-  // 4. Long-term scheduled transfer of the remaining 0.4 back to the operator in 3 minutes (HIP-423)
+  // 4. Long-term scheduled transfer of the remaining 0.4 to the admin account in 3 minutes (HIP-423)
   let scheduleOk = false;
   try {
     const sched = await scheduleTokenTransfer(ctx, tokenId, [
       { accountId: escrow.accountId, amount: -400_000n },
-      { accountId: ctx.operatorId.toString(), amount: 400_000n },
+      { accountId: adminId, amount: 400_000n },
     ], new Date(Date.now() + 3 * 60_000), { signers: [escrowKey], memo: "smoke scheduled fee share", waitForExpiry: true });
     log("schedule", sched.scheduleId, hs.schedule(sched.scheduleId), "scheduled tx id", sched.scheduledTxId);
     const info = await getScheduleInfo(ctx, sched.scheduleId);
@@ -102,6 +114,8 @@ async function main() {
     process.exit(1);
   }
   log(scheduleOk ? "PASS (incl. Scheduled Transaction)" : "PASS (Scheduled Transaction unavailable, see above)");
+  ctx.client.close(); // the SDK keeps gRPC channels open; without this the process never exits
+  process.exit(0);
 }
 
 main().catch((e) => {

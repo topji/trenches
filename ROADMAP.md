@@ -50,6 +50,8 @@ Deliverables
 - Every smoke script prints PASS/FAIL and explorer links.
 
 Done when: all three scripts PASS with real explorer links logged in `PROGRESS.md`. If Flash has not landed by Thu 17:00 IST, apply the Uniswap fallback from DECISIONS.md and record it.
+
+Outcome (Fri 6 Nov): Arkiv and Hedera PASS live. Builder chose not to fund a demo trader wallet, so the Flash fill proof moves to step 5 (first order through the real UI with the builder's own wallet).
 Needs from the builder: `.env` with Flash, Arkiv, Hedera keys; funded demo trader wallet on Base; Hedera operator with HBAR.
 
 ## Step 3 — Create and fund a Trench (F1)

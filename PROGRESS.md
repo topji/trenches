@@ -1,5 +1,35 @@
 # PROGRESS.md — newest first
 
+## Fri 6 Nov 2026, 15:10 IST — Step 2 live: Arkiv and Hedera smokes PASS; Flash fill deferred to step 5
+
+**Works (live, testnet)**
+- `pnpm smoke:arkiv` PASS on Rabdi. Writer `0xE5B3DB4a3D4F88C21CF85492222c8B4dDcdc1e87`.
+  - create `trenches.trench` entity: https://rabdi.explorer.arkiv.network/tx/0x70b04fad99f6af2113c1287b60c821b3e348926fb38d80b5663e645b49811d87
+  - query by trenchId and by slug: ok
+  - `patchEntity` status draft → funded (update in place): https://rabdi.explorer.arkiv.network/tx/0x8574b3d3f826a24b4de64f9f7049cc2d3ae755bf017e426c9905ccef92583faf
+  - discovery query (status in funded/live, asset WETH) returned it
+  - entity: https://rabdi.explorer.arkiv.network/entity/0x95277f9af5d962e24418a2bc789cf8b8d49c86da108b0c000cb1823cb23d8ac0
+- `pnpm smoke:hedera` PASS on testnet, **including the HIP-423 long-term Scheduled Transaction**. Operator `0.0.11330265`.
+  - demo prize token TRENCH-USDC `0.0.11337181` (now in `.env`): https://hashscan.io/testnet/token/0.0.11337181
+  - admin fee-share account `0.0.11337182` (now in `.env`, key kept in `.env` too): https://hashscan.io/testnet/account/0.0.11337182
+  - escrow account `0.0.11337183` (unlimited auto-association): https://hashscan.io/testnet/account/0.0.11337183
+  - HCS topic `0.0.11337184`, message seq 1 (`trench.created` envelope): https://hashscan.io/testnet/topic/0.0.11337184
+  - fund escrow 1.000000: https://hashscan.io/testnet/transaction/0.0.11330265-1793957724-380422235
+  - payout 0.600000 from escrow, signed by the escrow key: https://hashscan.io/testnet/transaction/0.0.11330265-1793957727-888524131
+  - Scheduled Transaction `0.0.11337186` (0.400000 escrow → admin, `waitForExpiry=true`, expires 2026-11-06T09:38:34Z): https://hashscan.io/testnet/schedule/0.0.11337186
+  - Mirror Node reconciled: escrow balance 400000, 1 topic message, payout SUCCESS.
+  - An earlier identical run also passed (token `0.0.11337130`, schedule `0.0.11337136`); those ids are unused.
+- `scripts/hedera-smoke.ts` now creates the admin account when `ADMIN_HEDERA_ACCOUNT_ID` is blank, routes the scheduled fee share to it, and closes the SDK client so the process exits.
+
+**Decisions made**
+- **No funded demo trader wallet.** Builder chose not to fund a throwaway Base wallet, so `scripts/flash-smoke.ts` stays unrun (it exits 2 "NEEDS ENV"). The Flash gate proof moves to step 5: the first fill goes through the real UI with the builder's own Privy wallet. Read-only Flash validation (search + market/TWAP/bracket quotes with the public dev key) already passed, so the request shapes are right; the untested part is sign → submit → fill. `DEMO_TRADER_B_KEY` is likewise unused until step 9.
+- Demo prize token is our own TRENCH-USDC (`0.0.11337181`), not Circle's testnet USDC, so we can mint freely for demo pools. Switch by changing `HEDERA_PRIZE_TOKEN_ID`.
+
+**Doesn't work yet**
+- Flash order submission is unverified live (see above).
+
+**Next:** step 3 on command (`DATABASE_URL` is set).
+
 ## Thu 5 Nov 2026, 16:10 IST — Step 2 code done; smoke runs blocked on `.env`
 
 **Works**
