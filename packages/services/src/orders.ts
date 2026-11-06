@@ -50,6 +50,8 @@ export interface QuoteSummary {
   approveTx: { to: string; data: string } | null;
   orderTypedData: string | null;
   permitTypedData: string | null;
+  /** Bracket entry: the attached stop/take-profit order is a second EIP-712 signature. */
+  bracket: { orderTypedData: string | null; permitTypedData: string | null; approveTx: { to: string; data: string } | null; deadline: string; signedMaxFromAmount: string; salt: string | null } | null;
   expiresAt: string;
 }
 
@@ -125,6 +127,16 @@ export async function quoteOrder(trenchId: string, trader: Address, raw: unknown
     approveTx: q.evm?.approveTx ?? null,
     orderTypedData: q.evm?.orderTypedData ?? null,
     permitTypedData: q.evm?.permitTypedData ?? null,
+    bracket: q.attachedBracket
+      ? {
+          orderTypedData: q.attachedBracket.evm?.orderTypedData ?? null,
+          permitTypedData: q.attachedBracket.evm?.permitTypedData ?? null,
+          approveTx: q.attachedBracket.evm?.approveTx ?? null,
+          deadline: q.attachedBracket.deadline,
+          signedMaxFromAmount: q.attachedBracket.signedMaxFromAmount,
+          salt: q.attachedBracket.salt,
+        }
+      : null,
     expiresAt: new Date(Date.now() + 4 * 60_000).toISOString(),
   };
 
@@ -139,7 +151,7 @@ export async function quoteOrder(trenchId: string, trader: Address, raw: unknown
       side: input.side,
       params: p.data as Record<string, unknown>,
       request: request as unknown as Record<string, unknown>,
-      summary: { from: q.from, to: q.to, feeUsd: summary.feeUsd, priceUsd, amount: input.amount },
+      summary: { from: q.from, to: q.to, feeUsd: summary.feeUsd, priceUsd, amount: input.amount, ...(summary.bracket ? { bracket: summary.bracket } : {}) },
       orderTypedData: summary.orderTypedData,
       permitTypedData: summary.permitTypedData,
       createdAt: new Date().toISOString(),
@@ -156,6 +168,8 @@ export const submitInputSchema = z.object({
   quoteId: z.string().min(1),
   userSignature: z.string().regex(/^0x[0-9a-fA-F]+$/),
   evmPermitSignature: z.string().regex(/^0x[0-9a-fA-F]+$/).optional(),
+  bracketSignature: z.string().regex(/^0x[0-9a-fA-F]+$/).optional(),
+  bracketPermitSignature: z.string().regex(/^0x[0-9a-fA-F]+$/).optional(),
 });
 
 export interface SubmittedOrder {
@@ -194,6 +208,23 @@ export async function submitOrder(trenchId: string, trader: Address, raw: unknow
     updatedAt: now,
   };
 
+  // Bracket entry (docs/integrations/flash.md §3.3): the attached bracket is re-sent with its own signature.
+  const bracketInfo = (q.summary as { bracket?: NonNullable<QuoteSummary["bracket"]> }).bracket;
+  let attachedBracket: Record<string, unknown> | undefined;
+  if (q.type === "bracket") {
+    if (!bracketInfo || !request.attachedBracket) throw badRequest("Quote carries no bracket to sign.");
+    if (!input.bracketSignature) throw badRequest("Bracket signature is missing.");
+    attachedBracket = {
+      takeProfit: request.attachedBracket.takeProfit,
+      stopLoss: request.attachedBracket.stopLoss,
+      userSignature: input.bracketSignature,
+      ...(bracketInfo.salt ? { salt: bracketInfo.salt } : {}),
+      deadline: bracketInfo.deadline,
+      signedMaxFromAmount: bracketInfo.signedMaxFromAmount,
+      ...(bracketInfo.permitTypedData && input.bracketPermitSignature ? { evmPermitTypedData: bracketInfo.permitTypedData, evmPermitSignature: input.bracketPermitSignature } : {}),
+    };
+  }
+
   try {
     const res = await flash.submitOrder({
       ...toSubmitFields(request),
@@ -202,7 +233,8 @@ export async function submitOrder(trenchId: string, trader: Address, raw: unknow
       userSignature: input.userSignature,
       evmOrderTypedData: q.orderTypedData,
       ...(q.permitTypedData && input.evmPermitSignature ? { evmPermitTypedData: q.permitTypedData, evmPermitSignature: input.evmPermitSignature } : {}),
-    });
+      ...(attachedBracket ? { attachedBracket } : {}),
+    } as Parameters<typeof flash.submitOrder>[0]);
     await db.insert(orders).values({ ...base, flashOrderId: res.orderId, status: "open" });
     log.info({ trenchId, trader, orderId: id, flashOrderId: res.orderId, type: q.type }, "order placed");
     return {

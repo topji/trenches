@@ -29,6 +29,10 @@ export function rowToTrench(r: TrenchRow): Trench {
   };
 }
 
+export function paidAtOf(r: TrenchRow): string | undefined {
+  return r.paidAt ? new Date(r.paidAt).toISOString() : undefined;
+}
+
 export function trenchToRow(t: Trench, extra: { arkivEntityKey?: string | null; arkivTxHash?: string | null } = {}): NewTrenchRow {
   const now = new Date().toISOString();
   return {

@@ -22,13 +22,14 @@ interface Quote {
   approveTx: { to: string; data: string } | null;
   orderTypedData: string | null;
   permitTypedData: string | null;
+  bracket: { orderTypedData: string | null; permitTypedData: string | null; approveTx: { to: string; data: string } | null } | null;
 }
 
-const ACTIVE_TYPES: OrderType[] = ["market", "dca"];
+const ACTIVE_TYPES: OrderType[] = ["market", "dca", "bracket"];
 const ALL_TYPES: OrderType[] = ["market", "dca", "bracket", "limit", "twap"];
 const BASE_CHAIN_ID = 8453;
 
-type Step = "idle" | "quoting" | "approving" | "signing" | "submitting";
+type Step = "idle" | "quoting" | "approving" | "signing" | "signingBracket" | "submitting";
 
 /**
  * F3 order ticket: segmented type control, asset select, side, amount, live quote line, one button.
@@ -44,6 +45,8 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
   const [amount, setAmount] = useState("3");
   const [legs, setLegs] = useState("3");
   const [interval, setInterval_] = useState("60");
+  const [stopLoss, setStopLoss] = useState("");
+  const [takeProfit, setTakeProfit] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,20 +61,22 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
 
   function params(): Record<string, unknown> {
     if (type === "dca") return { legs: Number(legs), intervalSeconds: Number(interval) };
+    if (type === "bracket") return { stopLossPrice: stopLoss, takeProfitPrice: takeProfit };
     return {};
   }
 
-  async function fetchQuote(preview: boolean): Promise<Quote | null> {
+  async function fetchQuoteAs(t: OrderType, p: Record<string, unknown>, preview: boolean): Promise<Quote | null> {
     const headers = { "content-type": "application/json", ...(await session.authHeaders()) };
     const res = await fetch(`/api/trenches/${trenchId}/orders/quote`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ type, asset, side, amount, params: params(), preview }),
+      body: JSON.stringify({ type: t, asset, side: t === "bracket" ? "buy" : side, amount, params: p, preview }),
     });
     const body = (await res.json()) as Quote & { error?: string };
     if (!res.ok) throw new Error(body.error ?? "Couldn't get a quote.");
     return body;
   }
+  const fetchQuote = (preview: boolean) => fetchQuoteAs(type, params(), preview);
 
   // Wallet balances (on-chain, via the server): refreshed on mount, after each order, and every 30 s.
   useEffect(() => {
@@ -92,10 +97,30 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
     };
   }, [session.address, assets, balanceKey]);
 
+  // Bracket defaults (DECISIONS.md): stop −3 %, take profit +3 % of the current quote price.
+  useEffect(() => {
+    if (type === "bracket" && quote && (!stopLoss || !takeProfit)) {
+      if (!stopLoss) setStopLoss((quote.priceUsd * 0.97).toFixed(2));
+      if (!takeProfit) setTakeProfit((quote.priceUsd * 1.03).toFixed(2));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, quote?.priceUsd]);
+
   // Live quote line, debounced; informational only (the order re-quotes at signing time).
   useEffect(() => {
     if (!session.authenticated || !asset || !(Number(amount) > 0)) {
       setQuote(null);
+      return;
+    }
+    if (type === "bracket" && (!(Number(stopLoss) > 0) || !(Number(takeProfit) > 0))) {
+      // No prices yet: quote as a plain market buy to learn the price, then fill the defaults.
+      if (debounce.current) clearTimeout(debounce.current);
+      debounce.current = setTimeout(() => {
+        setQuoteError(null);
+        fetchQuoteAs("market", {}, true)
+          .then(setQuote)
+          .catch((e: Error) => setQuoteError(e.message));
+      }, 600);
       return;
     }
     if (debounce.current) clearTimeout(debounce.current);
@@ -112,7 +137,7 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
       if (debounce.current) clearTimeout(debounce.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, asset, side, amount, legs, interval, session.authenticated]);
+  }, [type, asset, side, amount, legs, interval, stopLoss, takeProfit, session.authenticated]);
 
   async function waitForReceipt(provider: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> }, hash: string): Promise<void> {
     for (let i = 0; i < 60; i++) {
@@ -150,9 +175,26 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
         evmPermitSignature = (await provider.request({ method: "eth_signTypedData_v4", params: [session.address, q.permitTypedData] })) as string;
       }
 
+      // Bracket: the attached stop / take-profit legs are a second order to approve (WETH) and sign.
+      let bracketSignature: string | undefined;
+      let bracketPermitSignature: string | undefined;
+      if (q.bracket) {
+        if (q.bracket.approveTx) {
+          setStep("approving");
+          const hash = (await provider.request({ method: "eth_sendTransaction", params: [{ from: session.address, to: q.bracket.approveTx.to, data: q.bracket.approveTx.data }] })) as string;
+          await waitForReceipt(provider, hash);
+        }
+        setStep("signingBracket");
+        if (!q.bracket.orderTypedData) throw new Error("Flash returned no bracket to sign.");
+        bracketSignature = (await provider.request({ method: "eth_signTypedData_v4", params: [session.address, q.bracket.orderTypedData] })) as string;
+        if (q.bracket.permitTypedData) {
+          bracketPermitSignature = (await provider.request({ method: "eth_signTypedData_v4", params: [session.address, q.bracket.permitTypedData] })) as string;
+        }
+      }
+
       setStep("submitting");
       const headers = { "content-type": "application/json", ...(await session.authHeaders()) };
-      const res = await fetch(`/api/trenches/${trenchId}/orders`, { method: "POST", headers, body: JSON.stringify({ quoteId: q.quoteId, userSignature, evmPermitSignature }) });
+      const res = await fetch(`/api/trenches/${trenchId}/orders`, { method: "POST", headers, body: JSON.stringify({ quoteId: q.quoteId, userSignature, evmPermitSignature, bracketSignature, bracketPermitSignature }) });
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "Order rejected.");
       setToast(copy.order.placed);
@@ -216,7 +258,7 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
         <Field label={f.side}>
           <div className="flex gap-1 p-1 bg-raised rounded border border-line h-11 lg:h-10" role="radiogroup" aria-label={f.side}>
             {(["buy", "sell"] as const).map((s) => (
-              <button key={s} type="button" role="radio" aria-checked={side === s} onClick={() => setSide(s)} className={clsx("flex-1 rounded text-small", side === s ? "bg-bg text-text border border-line" : "text-muted")}>
+              <button key={s} type="button" role="radio" aria-checked={(type === "bracket" ? "buy" : side) === s} disabled={type === "bracket" && s === "sell"} onClick={() => setSide(s)} className={clsx("flex-1 rounded text-small disabled:opacity-40", (type === "bracket" ? "buy" : side) === s ? "bg-bg text-text border border-line" : "text-muted")}>
                 {s === "buy" ? f.buy : f.sell}
               </button>
             ))}
@@ -242,6 +284,18 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-small text-muted">{side === "buy" ? "USDC" : symbol}</span>
         </div>
       </Field>
+
+      {type === "bracket" && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={f.stopLoss} htmlFor="stopLoss">
+            <input id="stopLoss" type="number" inputMode="decimal" min="0" step="any" className={clsx(inputClass, "tabular")} value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} />
+          </Field>
+          <Field label={f.takeProfit} htmlFor="takeProfit">
+            <input id="takeProfit" type="number" inputMode="decimal" min="0" step="any" className={clsx(inputClass, "tabular")} value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} />
+          </Field>
+          <p className="col-span-2 text-small text-faint">{copy.order.bracketHelper}</p>
+        </div>
+      )}
 
       {type === "dca" && (
         <div className="grid grid-cols-2 gap-3">

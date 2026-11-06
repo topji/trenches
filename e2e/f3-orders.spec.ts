@@ -70,10 +70,20 @@ test("F3 quote: market and DCA quotes carry the platform fee; ticket shows the q
   const dca = await request.post(`/api/trenches/${live.id}/orders/quote`, { headers: demoHeaders(TRADER), data: { type: "dca", asset: WETH, side: "buy", amount: "3", params: { legs: 3, intervalSeconds: 60 }, preview: true } });
   expect(dca.status()).toBe(200);
 
+  // Bracket entry: market buy + attached stop / take-profit, a second typed-data payload to sign (step 7)
+  const sl = (m.priceUsd * 0.97).toFixed(2);
+  const tp = (m.priceUsd * 1.03).toFixed(2);
+  const bracket = await request.post(`/api/trenches/${live.id}/orders/quote`, { headers: demoHeaders(TRADER), data: { type: "bracket", asset: WETH, side: "buy", amount: "3", params: { stopLossPrice: sl, takeProfitPrice: tp }, preview: true } });
+  expect(bracket.status()).toBe(200);
+  const b = (await bracket.json()) as { bracket: { orderTypedData: string | null; deadline: string; signedMaxFromAmount: string } | null };
+  expect(b.bracket?.orderTypedData).toBeTruthy();
+  expect(b.bracket?.deadline).toBeTruthy();
+
   await page.goto(`/t/${live.slug}`);
   await expect(page.getByRole("heading", { name: "Place an order" })).toBeVisible();
   await expect(page.getByText(/≈ .* WETH at \$.* · fee .* USDC/)).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByRole("radio", { name: "Bracket" })).toBeDisabled();
+  await expect(page.getByRole("radio", { name: "Limit" })).toBeDisabled();
+  await expect(page.getByRole("radio", { name: "Bracket" })).toBeEnabled();
   await page.getByRole("radio", { name: "DCA" }).click();
   await expect(page.getByLabel("Legs")).toHaveValue("3");
   await expect(page.getByText(/≈ .* WETH at \$.* · fee .* USDC/)).toBeVisible({ timeout: 60_000 });

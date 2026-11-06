@@ -14,6 +14,12 @@ export function EscrowLine({ trench, balance, arkivEntityKey }: { trench: Trench
       {trench.hedera.fundingTxId && (
         <ExplorerLink href={explorers.hashscanTx(toMirrorId(trench.hedera.fundingTxId))} label="Funding tx" hash={toMirrorId(trench.hedera.fundingTxId)} />
       )}
+      {trench.hedera.payoutTxId && (
+        <ExplorerLink href={explorers.hashscanTx(toMirrorId(trench.hedera.payoutTxId))} label={copy.trench.payoutTx} hash={toMirrorId(trench.hedera.payoutTxId)} />
+      )}
+      {trench.hedera.scheduleId && (
+        <ExplorerLink href={explorers.hashscanSchedule(trench.hedera.scheduleId)} label={copy.trench.feeShare} hash={trench.hedera.scheduleId} />
+      )}
       {arkivEntityKey ? (
         <ExplorerLink href={explorers.arkivEntity(arkivEntityKey)} label={copy.trench.publicRecord} hash={arkivEntityKey} />
       ) : (

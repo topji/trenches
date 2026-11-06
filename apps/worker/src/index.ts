@@ -1,7 +1,7 @@
 import "dotenv/config";
 import cron from "node-cron";
 import pino from "pino";
-import { activateTrenches, pollOrders, recomputeLeaderboards } from "@trenches/services";
+import { activateTrenches, pollOrders, recomputeLeaderboards, settleTrenches } from "@trenches/services";
 
 /**
  * Worker process: pollers, scoring, settlement.
@@ -9,7 +9,7 @@ import { activateTrenches, pollOrders, recomputeLeaderboards } from "@trenches/s
  *   step 3  activateTrenches   (every 30 s)        ✓
  *   step 5  pollOrders         (every 15 s)        ✓
  *   step 6  recomputeLeaderboards (every 30 s)   ✓
- *   step 7  settleTrenches     (every 60 s)
+ *   step 7  settleTrenches     (every 60 s)        ✓
  *   step 8  refreshProfiles    (every 5 min)
  */
 const log = pino({ level: process.env.LOG_LEVEL ?? "info" });
@@ -31,6 +31,15 @@ const jobs: { name: string; schedule: string; run: () => Promise<unknown> }[] = 
       const r = await recomputeLeaderboards();
       const changed = r.filter((x) => x.changed);
       if (changed.length) log.info({ changed: changed.map((x) => ({ trenchId: x.trenchId, rows: x.rows.length, rankChanges: x.rankChanges, arkivTx: x.arkivTxHash, snapshot: x.snapshot })) }, "leaderboards updated");
+      return r.length;
+    },
+  },
+  {
+    name: "settleTrenches",
+    schedule: "20 * * * * *",
+    run: async () => {
+      const r = await settleTrenches();
+      for (const s of r) log.info({ trenchId: s.trenchId, slug: s.slug, winners: s.winners, payoutTxId: s.payoutTxId, feeShare: s.feeShare, arkivPayoutsTx: s.arkivPayoutsTx }, "settled");
       return r.length;
     },
   },

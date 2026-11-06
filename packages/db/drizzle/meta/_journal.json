@@ -22,6 +22,13 @@
       "when": 1794002352525,
       "tag": "0002_optimal_pestilence",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794008469313,
+      "tag": "0003_petite_gravity",
+      "breakpoints": true
     }
   ]
 }

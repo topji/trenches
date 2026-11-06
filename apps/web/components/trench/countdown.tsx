@@ -18,7 +18,7 @@ export function Countdown({ startAt, endAt, status, paidAt }: { startAt: string;
   let figure: string;
   let tone: "accent" | "muted";
   if (status === "settled") {
-    label = copy.trench.countdown.paid(paidAt ? formatLocalTime(paidAt) : "");
+    label = paidAt ? `${copy.status.settled} · ${copy.trench.countdown.paid(formatLocalTime(paidAt))}` : copy.status.settled;
     figure = copy.status.settled;
     tone = "muted";
   } else if (now >= end || status === "ended") {

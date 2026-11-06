@@ -33,6 +33,8 @@ export const trenches = pgTable(
     sponsor: jsonb("sponsor").$type<{ address: `0x${string}`; name: string; logoUrl?: string }>(),
     arkivEntityKey: text("arkiv_entity_key"),
     arkivTxHash: text("arkiv_tx_hash"),
+    settlementStartedAt: ts("settlement_started_at"), // claim flag so only one worker settles a Trench
+    paidAt: ts("paid_at"),
     createdAt: ts("created_at").notNull(),
     updatedAt: ts("updated_at").notNull(),
   },
@@ -63,6 +65,19 @@ export const entries = pgTable(
   },
   (t) => ({ pk: primaryKey({ columns: [t.trenchId, t.trader] }) }),
 );
+
+/**
+ * Hedera account that receives a trader's payouts. DEMO_WINNER_ACCOUNTS wins when present; otherwise
+ * the platform creates one per trader for the demo (key encrypted like escrow keys). Production would
+ * collect a Hedera account at join.
+ */
+export const winnerAccounts = pgTable("winner_accounts", {
+  trader: text("trader").primaryKey(),
+  accountId: text("account_id").notNull(),
+  encryptedKey: text("encrypted_key"),
+  source: text("source").notNull(), // "env" | "created"
+  createdAt: ts("created_at").notNull(),
+});
 
 /** Uniqueness key for "one human per Trench" (F2.4). */
 export const worldVerifications = pgTable(

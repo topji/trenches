@@ -7,14 +7,14 @@ import { Countdown } from "./countdown";
 import Link from "next/link";
 
 /** Trench page header: countdown is the hero, pool beside it (DESIGN_SYSTEM §4 skeleton). */
-export function TrenchHeader({ trench, entrants }: { trench: Trench; entrants: number }) {
+export function TrenchHeader({ trench, entrants, paidAt }: { trench: Trench; entrants: number; paidAt?: string }) {
   const pill = pillFor(trench);
   return (
     <header className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-3">
           <StatusPill status={pill} />
-          <Countdown startAt={trench.startAt} endAt={trench.endAt} status={trench.status} />
+          <Countdown startAt={trench.startAt} endAt={trench.endAt} status={trench.status} paidAt={paidAt} />
         </div>
         <div className="text-right">
           <div className="text-small text-muted">{copy.trench.pool}</div>
