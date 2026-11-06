@@ -18,6 +18,7 @@ import { z } from "zod";
 import { log, services } from "./context.js";
 import { ServiceError, badRequest, forbidden, notFound } from "./errors.js";
 import { listEntryAddresses } from "./join.js";
+import { recomputeLeaderboard } from "./leaderboard.js";
 import { getTrenchRow } from "./trenches.js";
 
 export const MIN_ORDER_USDC = 1;
@@ -290,6 +291,7 @@ export async function pollOrders(): Promise<PollResult> {
   let newFills = 0;
   let closed = 0;
   let hadError = false;
+  const touched = new Set<string>();
 
   for (const o of open) {
     try {
@@ -320,6 +322,7 @@ export async function pollOrders(): Promise<PollResult> {
           .returning({ id: fills.id });
         if (inserted.length) {
           newFills += 1;
+          touched.add(o.trenchId);
           // Our integrator fee on this fill, split between platform and host by adminFeeShareBps (F3.5).
           const { platformUsd, adminUsd } = splitFee(Number(ff.integratorFeeNotional), adminFeeShareBps);
           await db.insert(feeLedger).values({ trenchId: o.trenchId, fillId: fill.id, admin, platformUsd: platformUsd.toFixed(6), adminUsd: adminUsd.toFixed(6), createdAt: new Date().toISOString() });
@@ -345,6 +348,14 @@ export async function pollOrders(): Promise<PollResult> {
     backoffUntil = Date.now() + backoffMs;
   } else {
     backoffMs = 0;
+  }
+  // F4.1: the board reflects a fill within 30 s → recompute right away for the Trenches that got one.
+  for (const trenchId of touched) {
+    try {
+      await recomputeLeaderboard(trenchId);
+    } catch (e) {
+      log.error({ trenchId, err: (e as Error).message }, "recompute after fill failed");
+    }
   }
   return { polled: open.length, newFills, closed };
 }

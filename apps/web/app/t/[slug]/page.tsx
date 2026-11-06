@@ -6,7 +6,7 @@ import { copy } from "@/lib/copy";
 import { canJoin, canTrade } from "@trenches/core";
 import { TrenchHeader } from "@/components/trench/header";
 import { JoinPanel } from "@/components/trench/join-panel";
-import { Leaderboard } from "@/components/trench/leaderboard";
+import { LiveBoard } from "@/components/trench/live-board";
 import { TradePanel } from "@/components/trench/trade-panel";
 import { mergeBoard } from "@/lib/board";
 import { EscrowLine } from "@/components/trench/escrow-line";
@@ -54,7 +54,7 @@ export default async function TrenchPage({ params }: { params: Promise<{ slug: s
 
       <section aria-labelledby="board-heading">
         <h2 id="board-heading" className="sr-only">Leaderboard</h2>
-        <Leaderboard rows={rows} settled={trench.status === "settled"} />
+        <LiveBoard trenchId={trench.id} initialRows={rows} settled={trench.status === "settled"} live={live} />
       </section>
 
       <EscrowLine trench={trench} balance={balance} arkivEntityKey={arkivEntityKey} />

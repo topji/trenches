@@ -25,7 +25,8 @@
     "db:migrate": "pnpm --filter @trenches/db migrate",
     "db:generate": "pnpm --filter @trenches/db generate",
     "e2e": "playwright test",
-    "dev:tick": "curl -s -X POST http://localhost:3000/api/dev/tick"
+    "dev:tick": "curl -s -X POST http://localhost:3000/api/dev/tick",
+    "smoke:f4": "tsx scripts/f4-smoke.ts"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",

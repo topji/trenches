@@ -1,5 +1,26 @@
 # PROGRESS.md — newest first
 
+## Sat 7 Nov 2026, 05:45 IST — Step 6 done: live leaderboard on Arkiv (F4)
+
+**Works (live)**
+- `packages/services/src/leaderboard.ts`: `recomputeLeaderboard(trenchId)` scores the Trench's fills (`computeLeaderboard`, average-cost P&L, fees subtracted, window + allowed-asset filters) with mark prices from a Flash $100 market quote cached 20 s (fallback: last fill price), mirrors rows to Postgres (upsert), rewrites the public `trenches.lb` entities in one Arkiv `executeBatch` (create/patch/delete), and posts HCS `leaderboard.snapshot` (top 20, ≤ 1 KB) on every rank change and at least every 5 min. Writes happen only when something moved (rank, P&L ≥ 1 ¢, volume, fills).
+- Worker `recomputeLeaderboards` every 30 s for live and ended-but-unsettled Trenches; `pollOrders` also recomputes immediately for any Trench that just received a fill, so the board reflects a fill within one 15 s poll (F4.1).
+- `GET /api/trenches/[id]/leaderboard` (public, no-store): Arkiv `lb` rows ordered by rank, merged with entrants at $0.00.
+- Trench page: server-rendered from the Arkiv query, then `LiveBoard` polls the route every 15 s; moved rows get the 1.5 s accent highlight (`.rank-flash`), the caller's own move is announced in a polite live region ("You moved to rank 2."), rows stagger in once on load, reduced motion respected (globals.css). Real `<table>` with headers; win rate hides below 640 px so the board fits 390 px.
+- Live result on the Flash gate Trench from the builder's five real fills: rank 1 `0xd3ad…d00c`, P&L −$0.23, ROI −7.5 %, volume $6.94, win rate 0 %. Arkiv `lb` entity https://rabdi.explorer.arkiv.network/entity/0x0435dde4e4516a309c7f7c10714e106d55d1bc058d880aaa66ffff5a0afbd7d4 · HCS snapshots on topic https://hashscan.io/testnet/topic/0.0.11346342 (e.g. https://hashscan.io/testnet/transaction/0.0.11330265-1794007692-641358893, https://hashscan.io/testnet/transaction/0.0.11330265-1794008039-715839371) · example batch writes https://rabdi.explorer.arkiv.network/tx/0x05d00993da5a60f9d92887c6f6237d717c53b2356f3b87f707ef6e2d06290631, https://rabdi.explorer.arkiv.network/tx/0x0ffd817b548c16663c451ea89c85276cf1502f0b18ce7b9e215bdc695ecf129b.
+- `pnpm smoke:f4 <trenchId>` PASS (computed board == Arkiv board). `e2e/f4-leaderboard.spec.ts` green: F4.1 logged-out page + API from Arkiv with signed P&L and the human badge, no "You" tag when logged out; F4.2 scripted rank swap → both rows flash, live region reads "You moved to rank 2.", highlight clears after 1.5 s. F4.3 and F4.5 are the step 1 unit tests (window/asset exclusion, ties, fees, partial fills, empty entrant). F4.4 snapshots verified on the topic above.
+
+**Decisions made**
+- The board is written to Arkiv only on change, not every 30 s: a quiet Trench costs nothing; a moving one gets a batch per tick at most.
+- Snapshot payload uses 10-char address prefixes so 20 rows stay under the 1 KB HCS envelope.
+- Ended Trenches keep recomputing until settled, so step 7's `leaderboard.final` starts from a current board.
+- Three worker processes had been running at once (earlier `pkill` patterns never matched tsx's command line), which produced duplicate-key errors on the Postgres mirror and paired HCS snapshots on the gate Trench (seq 5–8). The mirror is now an upsert, so a second process can never throw, and exactly one worker runs.
+
+**Doesn't work yet**
+- Settlement / payout (step 7), Bracket (step 7), dashboard/profile/discovery filters/sponsor (step 8).
+
+**Next:** step 7 on command. Needs `DEMO_WINNER_ACCOUNTS` (set) and the admin Hedera account (set, `0.0.11337182`).
+
 ## Sat 7 Nov 2026, 05:10 IST — Step 5 done: Flash Market, Sell and DCA fills live from the builder's wallet
 
 **Works (live quotes against Flash, Base mainnet)**

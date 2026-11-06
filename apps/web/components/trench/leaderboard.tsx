@@ -11,23 +11,23 @@ import type { BoardRow } from "@/lib/board";
 
 const rankTone = ["text-accent", "text-rank-2", "text-rank-3"];
 
-export function Leaderboard({ rows, settled }: { rows: BoardRow[]; settled?: boolean }) {
+export function Leaderboard({ rows, settled, flash }: { rows: BoardRow[]; settled?: boolean; flash?: Set<string> }) {
   const { address } = useSession();
   const me = address?.toLowerCase();
   if (rows.length === 0) return <EmptyState>{copy.leaderboard.empty}</EmptyState>;
   const c = copy.leaderboard.columns;
   return (
-    <div className="overflow-x-auto -mx-4 px-4">
+    <div className="overflow-x-auto">
       {settled && <h2 className="text-h2 mb-4">{copy.leaderboard.settled}</h2>}
-      <table className="w-full min-w-[560px] border-t border-line">
+      <table className="w-full border-t border-line">
         <thead>
           <tr className="text-small text-muted text-left">
-            <th scope="col" className="py-2 pr-2 w-[48px]">{c.rank}</th>
+            <th scope="col" className="py-2 pr-2 w-[40px]">{c.rank}</th>
             <th scope="col" className="py-2 pr-2">{c.trader}</th>
             <th scope="col" className="py-2 pr-2 text-right">{c.pnl}</th>
             <th scope="col" className="py-2 pr-2 text-right">{c.roi}</th>
             <th scope="col" className="py-2 pr-2 text-right">{c.volume}</th>
-            <th scope="col" className="py-2 text-right">{c.winRate}</th>
+            <th scope="col" className="py-2 text-right hidden sm:table-cell">{c.winRate}</th>
           </tr>
         </thead>
         <tbody>
@@ -36,7 +36,7 @@ export function Leaderboard({ rows, settled }: { rows: BoardRow[]; settled?: boo
             return (
               <tr
                 key={r.trader}
-                className={clsx("h-14 border-t border-line row-in", mine && "border-l-2 border-l-accent")}
+                className={clsx("h-14 border-t border-line row-in", mine && "border-l-2 border-l-accent", flash?.has(r.trader.toLowerCase()) && "rank-flash")}
                 style={{ animationDelay: `${Math.min(i, 10) * 120}ms` }}
               >
                 <td className={clsx("pr-2 font-scoreboard text-figure", rankTone[r.rank - 1] ?? "text-text")}>{r.rank}</td>
@@ -48,9 +48,9 @@ export function Leaderboard({ rows, settled }: { rows: BoardRow[]; settled?: boo
                   </span>
                 </td>
                 <td className={clsx("pr-2 text-right font-scoreboard text-figure tabular", r.pnlUsd > 0 ? "text-gain" : r.pnlUsd < 0 ? "text-loss" : "text-text")}>{formatPnl(r.pnlUsd)}</td>
-                <td className="pr-2 text-right tabular text-muted">{formatPct(r.roiPct)}</td>
-                <td className="pr-2 text-right tabular text-muted">{formatCompactUsd(r.volumeUsd)}</td>
-                <td className="text-right tabular text-muted">{r.winRate === null ? "—" : `${Math.round(r.winRate * 100)}%`}</td>
+                <td className="pr-2 text-right tabular text-muted text-small">{formatPct(r.roiPct)}</td>
+                <td className="pr-2 text-right tabular text-muted text-small">{formatCompactUsd(r.volumeUsd)}</td>
+                <td className="text-right tabular text-muted text-small hidden sm:table-cell">{r.winRate === null ? "—" : `${Math.round(r.winRate * 100)}%`}</td>
               </tr>
             );
           })}

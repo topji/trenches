@@ -110,6 +110,8 @@ Deliverables
 Done when: F4.1–F4.5 pass; a logged-out browser shows the ranking from Arkiv within 30 s of a fill.
 Needs from the builder: nothing.
 
+Outcome (Sat 7 Nov, 05:45): done. Board scored from the builder's real fills, `lb` entities on Arkiv, snapshots on HCS, `e2e/f4-leaderboard.spec.ts` green, `pnpm smoke:f4` PASS.
+
 ## Step 7 — Settlement and payout on Hedera (F5) + Bracket orders
 **Goal:** the prize pool pays itself out and the record is tamper-evident.
 
