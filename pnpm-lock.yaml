@@ -233,6 +233,9 @@ importers:
       '@trenches/db':
         specifier: workspace:*
         version: link:../db
+      '@trenches/flash':
+        specifier: workspace:*
+        version: link:../flash
       '@trenches/hedera':
         specifier: workspace:*
         version: link:../hedera

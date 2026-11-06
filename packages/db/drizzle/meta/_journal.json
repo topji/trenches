@@ -15,6 +15,13 @@
       "when": 1793976567555,
       "tag": "0001_jittery_lady_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794002352525,
+      "tag": "0002_optimal_pestilence",
+      "breakpoints": true
     }
   ]
 }

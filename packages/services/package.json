@@ -19,7 +19,8 @@
     "@trenches/hedera": "workspace:*",
     "pino": "^9.5.0",
     "zod": "^3.23.8",
-    "@trenches/worldid": "workspace:*"
+    "@trenches/worldid": "workspace:*",
+    "@trenches/flash": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",

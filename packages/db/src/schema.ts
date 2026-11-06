@@ -100,6 +100,27 @@ export const orders = pgTable(
   }),
 );
 
+/** Flash quotes we issued for a trader, so the submit step trusts server-side fields (fee, asset, qty), not the client. */
+export const quotes = pgTable(
+  "quotes",
+  {
+    id: text("id").primaryKey(), // Flash quoteId
+    trenchId: text("trench_id").notNull().references(() => trenches.id),
+    trader: text("trader").notNull(),
+    type: text("type").notNull(),
+    asset: text("asset").notNull(),
+    symbol: text("symbol").notNull(),
+    side: text("side").notNull(),
+    params: jsonb("params").notNull().$type<Record<string, unknown>>(),
+    request: jsonb("request").notNull().$type<Record<string, unknown>>(), // Flash QuoteRequest as sent
+    summary: jsonb("summary").notNull().$type<Record<string, unknown>>(), // from/to/fees for the UI + order row
+    orderTypedData: text("order_typed_data"),
+    permitTypedData: text("permit_typed_data"),
+    createdAt: ts("created_at").notNull(),
+  },
+  (t) => ({ traderIdx: index("quotes_trader_idx").on(t.trenchId, t.trader) }),
+);
+
 export const fills = pgTable(
   "fills",
   {

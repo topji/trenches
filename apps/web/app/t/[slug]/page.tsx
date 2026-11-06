@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { arkivReader, escrowBalance, getTrenchRowBySlug, listHcs } from "@trenches/services";
 import { rowToTrench } from "@trenches/db";
 import { copy } from "@/lib/copy";
-import { canJoin } from "@trenches/core";
+import { canJoin, canTrade } from "@trenches/core";
 import { TrenchHeader } from "@/components/trench/header";
 import { JoinPanel } from "@/components/trench/join-panel";
 import { Leaderboard } from "@/components/trench/leaderboard";
+import { TradePanel } from "@/components/trench/trade-panel";
 import { mergeBoard } from "@/lib/board";
 import { EscrowLine } from "@/components/trench/escrow-line";
 import { HcsLog } from "@/components/trench/hcs-log";
@@ -41,6 +42,7 @@ export default async function TrenchPage({ params }: { params: Promise<{ slug: s
   if (!data) notFound();
   const { trench, entries, lb, balance, hcs, arkivEntityKey } = data;
   const gate = canJoin(trench);
+  const live = canTrade(trench).ok;
   const rows = mergeBoard(lb, entries);
 
   return (
@@ -48,6 +50,7 @@ export default async function TrenchPage({ params }: { params: Promise<{ slug: s
       <TrenchHeader trench={trench} entrants={entries.length} />
 
       <JoinPanel trenchId={trench.id} entrants={entries.map((e) => e.trader)} disabledReason={gate.ok ? null : gate.reason} />
+      <TradePanel trenchId={trench.id} assets={trench.allowedAssets} entrants={entries.map((e) => e.trader)} live={live} />
 
       <section aria-labelledby="board-heading">
         <h2 id="board-heading" className="sr-only">Leaderboard</h2>

@@ -5,6 +5,7 @@
 import { ArkivRepo, arkivFromEnv } from "@trenches/arkiv";
 import { dbFromEnv, type Db } from "@trenches/db";
 import { MirrorNode, hashscan, hederaFromEnv, type HederaContext } from "@trenches/hedera";
+import { FlashClient } from "@trenches/flash";
 import pino from "pino";
 
 export const log = pino({ level: process.env.LOG_LEVEL ?? "info" });
@@ -15,6 +16,9 @@ export interface AppConfig {
   escrowSecret: string;
   network: "testnet" | "mainnet" | "previewnet";
   appUrl: string;
+  flashApiKey: string;
+  feeBps: number;
+  tradingChainId: number;
 }
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -28,6 +32,9 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     escrowSecret,
     network: (env.HEDERA_NETWORK as AppConfig["network"]) ?? "testnet",
     appUrl: env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    flashApiKey: env.FLASH_API_KEY?.trim() ?? "",
+    feeBps: Number(env.FLASH_PLATFORM_FEE_BPS ?? 30),
+    tradingChainId: Number(env.TRADING_CHAIN_ID ?? 8453),
   };
 }
 
@@ -38,6 +45,7 @@ export interface Services {
   mirror: MirrorNode;
   hs: ReturnType<typeof hashscan>;
   config: AppConfig;
+  flash: FlashClient;
 }
 
 // Cached on globalThis so Next.js hot reloads reuse one Hedera client / Postgres pool instead of
@@ -58,7 +66,9 @@ export function services(): Services {
     mirror: new MirrorNode(config.network),
     hs: hashscan(config.network),
     config,
+    flash: new FlashClient({ apiKey: config.flashApiKey }),
   };
+  if (!config.flashApiKey) log.warn("FLASH_API_KEY is not set; order routes will fail");
   return g.__trenchesServices;
 }
 
