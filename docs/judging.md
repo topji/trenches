@@ -5,7 +5,7 @@ Filled in as each step lands. Every row needs a file:line and, where applicable,
 ## Definitive Flash
 | Requirement | Proof | Status |
 |---|---|---|
-| Market, DCA (TWAP) and Bracket orders through Flash with `flashIntegratorFeeBps` | `packages/flash/src/orders.ts` buildQuoteRequest; live quotes parsed (read-only) | code ready; first live fill in step 5 via the UI |
+| Market, DCA (TWAP) and Bracket orders through Flash with `flashIntegratorFeeBps` | `packages/flash/src/orders.ts` `buildQuoteRequest` (fee on every quote); `packages/services/src/orders.ts` `quoteOrder`/`submitOrder`; ticket `apps/web/components/trench/order-ticket.tsx`; live quotes with fee in `e2e/f3-orders.spec.ts` | Market + DCA wired, live fill pending builder wallet; Bracket step 7 |
 | On-chain fills (Base tx hashes) | step 5 | pending |
 | Demo video posted on Discord and X tagging @DefinitiveFi | step 10 | pending |
 

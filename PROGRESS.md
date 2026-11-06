@@ -1,5 +1,32 @@
 # PROGRESS.md — newest first
 
+## Sat 7 Nov 2026, 04:25 IST — Step 5 built: Flash order path (Market + DCA), fills poller; first live fill pending the builder's wallet
+
+**Works (live quotes against Flash, Base mainnet)**
+- `POST /api/trenches/[id]/orders/quote`: window (`canTrade`), entered, allowed-asset and 1 USDC minimum checks → `buildQuoteRequest` with `flashIntegratorFeeBps=30` and the trader as `funderAddress` → Flash quote stored in `quotes` (server-side source of truth for fee/asset/qty at submit). `preview: true` for the ticket's live line.
+- `POST /api/trenches/[id]/orders`: loads the stored quote, forwards the trader's EIP-712 signature (`eth_signTypedData_v4` over Flash's `orderTypedData`, signed in the Privy wallet) → Flash order id → `orders` row. A Flash rejection is stored as a `failed` order with the message and returned verbatim (F3.4).
+- `GET /api/trenches/[id]/orders`: own orders + fills. `GET /api/wallet/balances`: on-chain USDC / asset / ETH for the ticket.
+- Worker `pollOrders` every 15 s: open orders → `GET /orders/{id}?funderAddress` → fills inserted once per (tx, order), `fee_ledger` rows split by `adminFeeShareBps` (F3.5), status from Flash, exponential backoff to 60 s on errors.
+- Order ticket (`components/trench/order-ticket.tsx`): segmented type control (Market, DCA active; Bracket/Limit/TWAP disabled until steps 7–8), asset select limited to allowed assets, Buy/Sell, amount with USDC suffix, balances + Max, debounced quote line "≈ qty SYMBOL at price · fee", one button with approve → sign → submit steps. Orders list with Basescan links, polled while anything is open.
+- `e2e/f3-orders.spec.ts` green (mobile, 3.2 min): F3.3 guards (403 not entered, 409 not live, 400 wrong asset, 400 below minimum, exact copy); market + DCA quotes with fee ≈ $0.009 on $3; ticket renders the quote line, Bracket disabled, DCA fields; F3.4 bad signature → Flash error stored as `failed` and shown inline.
+- Live Trench for the gate: `/t/flash-gate-trench-1syb` (`01M6SEX2Q1PQD42NG4MNY4TMVR`, WETH + cbBTC, 6 h, pool 10). Builder's wallet `0xd3ad26714e5ef9583d9b441146e14a8e3913d00c` holds 5 USDC + 0.0018 ETH on Base, is joined, and has fetched valid quotes (2 USDC → 0.000886 WETH, fee 0.006).
+
+**Blocked on the builder (not a failure)**
+- **F3.1 first live fill**: the first attempt died in Privy's transaction modal ("Rendered fewer hooks", `isActive` prop) under React 19.3; React is now pinned to 19.1.1 (the version Privy's starter uses). Awaiting a retry: Market buy 2 USDC WETH, then DCA 3 USDC × 3 legs to prove multi-leg ingestion.
+
+**Decisions made**
+- Quotes are persisted server-side and the client only returns `{ quoteId, userSignature }`; nothing about fee, asset or qty is trusted from the browser.
+- The ticket's quote line is informational; the order re-quotes at click time because the signed deadline is ~5 min.
+- Fee ledger: `platform_usd` + `admin_usd` = Flash `integratorFeeNotional` per fill (our 30 bps), split by `adminFeeShareBps`. Scoring (step 6) subtracts the fill's total `feeNotional`.
+- Funding claims `draft → funded|live` atomically and the worker claims `funded → live` / `live → ended` with `UPDATE … RETURNING`, so the demo tick and the worker never double-process; Arkiv is patched from the claimed row with one retry (shared writer wallet, nonce clashes). Found when a Trench ended up `live` in Postgres and `funded` on Arkiv.
+- Worker and web both load the root `.env` via symlinks (`apps/*/.env`, gitignored). The worker had been running without env since step 3; its jobs failed silently in the log.
+- e2e asserts the Arkiv-backed status by polling (`waitForStatus`), since Arkiv lags Postgres by a few seconds.
+
+**Doesn't work yet**
+- No live fill yet (above). Leaderboard scoring (step 6), settlement (step 7), Bracket/Limit/TWAP (steps 7–8).
+
+**Next:** builder places the Market + DCA orders; log the Basescan links here and in `docs/judging.md`; then step 6 on command.
+
 ## Sat 7 Nov 2026, 03:10 IST — Step 4 done: join with World ID (F2.1–F2.5), Privy login
 
 **Works (live, testnet + Neon)**

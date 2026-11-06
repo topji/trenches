@@ -97,6 +97,8 @@ Deliverables
 Done when: F3.1, F3.3–F3.5 pass and a DCA with 3 legs ingests fills as they land.
 Needs from the builder: nothing new beyond step 2.
 
+Outcome (Sat 7 Nov, 04:25): built and pushed; F3.3–F3.5 green (`e2e/f3-orders.spec.ts`). F3.1 and the 3-leg DCA ingest wait for the builder's wallet to sign in the browser (no funded server-side key by decision).
+
 ## Step 6 — Live leaderboard on Arkiv (F4)
 **Goal:** the loudest thing on the page, backed by a public query.
 
