@@ -181,9 +181,13 @@ export interface FundResult {
   fundedMsg: HcsRecord | { error: string };
 }
 
-/** The treasury funds the escrow on the host's confirmation (DECISIONS.md), then status → funded. */
+/**
+ * The treasury funds the escrow on the host's confirmation (DECISIONS.md), then the status flip is
+ * claimed atomically in Postgres: draft → funded, or straight to live when startAt has already passed
+ * (so the worker has nothing left to race for). Arkiv is patched from the claimed row.
+ */
 export async function fundTrench(id: string, actor: Address): Promise<FundResult> {
-  const { hedera, config } = services();
+  const { db, hedera, config } = services();
   const row = await getTrenchRow(id);
   if (!row) throw notFound();
   if (row.adminAddress !== actor.toLowerCase()) throw forbidden();
@@ -193,14 +197,38 @@ export async function fundTrench(id: string, actor: Address): Promise<FundResult
   const amount = toBaseUnits(trench.prizePoolUsdc);
   const fundingTxId = await fundFromOperator(hedera, config.prizeTokenId, trench.hedera.escrowAccountId, amount, `trenches fund ${trench.slug}`);
 
-  const funded: Trench = { ...trench, status: "funded", hedera: { ...trench.hedera, fundingTxId } };
-  const arkivRes = await persistTrench(funded, row.arkivEntityKey);
+  const nowIso = new Date().toISOString();
+  const next: TrenchStatus = Date.parse(trench.startAt) <= Date.now() ? "live" : "funded";
+  const [claimed] = await db
+    .update(trenches)
+    .set({ status: next, fundingTxId, updatedAt: nowIso })
+    .where(and(eq(trenches.id, id), eq(trenches.status, "draft")))
+    .returning();
+  if (!claimed) throw conflict("This Trench is already funded.");
+  const funded = rowToTrench(claimed);
+
+  let arkivRes: { arkivTxHash?: string; arkivError?: string } = {};
+  try {
+    if (claimed.arkivEntityKey) {
+      const r = await withArkivRetry("updateTrench", () => services().arkiv.updateTrench(funded, claimed.arkivEntityKey as `0x${string}`));
+      arkivRes = { arkivTxHash: r.txHash };
+    } else {
+      const r = await withArkivRetry("createTrench", () => services().arkiv.createTrench(funded));
+      await db.update(trenches).set({ arkivEntityKey: r.entityKey, arkivTxHash: r.txHash }).where(eq(trenches.id, id));
+      arkivRes = { arkivTxHash: r.txHash };
+    }
+  } catch (e) {
+    log.error({ trenchId: id, err: (e as Error).message }, "arkiv update failed");
+    arkivRes = { arkivError: (e as Error).message };
+  }
+
   const fundedMsg = await recordHcs(id, trench.hedera.topicId, "trench.funded", {
     fundingTxId,
     amountUsdc: trench.prizePoolUsdc,
     tokenId: config.prizeTokenId,
     escrow: trench.hedera.escrowAccountId,
   });
+  if (next === "live") await recordHcs(id, trench.hedera.topicId, "trench.live", { at: nowIso, startAt: trench.startAt, endAt: trench.endAt });
   return { trench: funded, fundingTxId, ...arkivRes, fundedMsg };
 }
 

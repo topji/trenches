@@ -21,9 +21,10 @@ test.beforeAll(async ({ request }) => {
   const tag = Date.now().toString(36);
   // Starts in the past (demo mode allows it) so one worker tick makes it live.
   live = await createTrenchViaApi(request, ADMIN, { name: `F3 live ${tag}`, startInMs: -60_000, durationMs: 30 * 60_000, fund: true });
-  const tick = await request.post("/api/dev/tick", { data: { trenchId: live.id } });
-  const body = (await tick.json()) as { transitions: { trenchId: string; to: string }[] };
-  expect(body.transitions.some((t) => t.trenchId === live.id && t.to === "live")).toBe(true);
+  // The worker (every 30 s) may claim the transition first; either way the Trench must now be live.
+  await request.post("/api/dev/tick", { data: { trenchId: live.id } });
+  const after = (await (await request.get(`/api/trenches/${live.id}`)).json()) as { trench: { status: string } };
+  expect(after.trench.status).toBe("live");
   upcoming = await createTrenchViaApi(request, ADMIN, { name: `F3 upcoming ${tag}`, startInMs: 20 * 60_000, durationMs: 30 * 60_000, fund: true });
 });
 
