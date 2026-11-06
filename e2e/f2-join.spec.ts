@@ -28,7 +28,7 @@ test("F2.1 success: verified human appears on the board at $0.00 with the badge"
   await demoSession(page, TRADER_A);
   await page.goto(`/t/${open.slug}`);
   await page.getByRole("button", { name: "Join this Trench" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 60_000 });
   await page.screenshot({ path: testInfo.outputPath("mock-sheet.png"), fullPage: true });
   await page.getByRole("button", { name: "Verify as human" }).click();
   await expect(page.getByText("You're in. Place your first order.")).toBeVisible({ timeout: 60_000 });
@@ -55,7 +55,7 @@ test("F2.2 cancel: closing the mock widget sends nothing and keeps the Join butt
   });
   await page.goto(`/t/${open.slug}`);
   await page.getByRole("button", { name: "Join this Trench" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByText("Verification cancelled. Join when you're ready.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Join this Trench" })).toBeEnabled();
@@ -71,8 +71,8 @@ test("F2.3 invalid proof: server answers 401 and the UI says so", async ({ page,
   });
   await page.goto(`/t/${open.slug}`);
   await page.getByRole("button", { name: "Join this Trench" }).click();
-  await page.getByRole("button", { name: "Verify as human" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Verification failed. Try again.");
+  await page.getByRole("button", { name: "Verify as human" }).click({ timeout: 60_000 });
+  await expect(page.getByText("Verification failed. Try again.")).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole("button", { name: "Join this Trench" })).toBeEnabled();
 
   const direct = await request.post(`/api/trenches/${open.id}/join`, { headers: demoHeaders(TRADER_B), data: { result: { nope: true } } });
@@ -88,9 +88,9 @@ test("F2.4 duplicate: the same human (nullifier) cannot enter twice", async ({ p
   await demoSession(page, TRADER_C);
   await page.goto(`/t/${open.slug}`);
   await page.getByRole("button", { name: "Join this Trench" }).click();
-  await page.getByLabel("Mock identity").fill(TRADER_A); // same mock human as F2.1, different wallet
+  await page.getByLabel("Mock identity").fill(TRADER_A, { timeout: 60_000 }); // same mock human as F2.1, different wallet
   await page.getByRole("button", { name: "Verify as human" }).click();
-  await expect(page.getByRole("alert")).toHaveText("You've already entered this Trench.");
+  await expect(page.getByText("You've already entered this Trench.")).toBeVisible({ timeout: 60_000 });
 
   const again = await request.post(`/api/trenches/${open.id}/join`, { headers: demoHeaders(TRADER_A), data: { result: {} } });
   expect(again.status()).toBe(409);

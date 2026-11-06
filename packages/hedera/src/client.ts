@@ -24,6 +24,9 @@ export function createHedera(cfg: HederaConfig): HederaContext {
   client.setOperator(operatorId, operatorKey);
   client.setDefaultMaxTransactionFee(new Hbar(10));
   client.setDefaultMaxQueryPayment(new Hbar(1));
+  // Fail fast: a stuck node should surface as an error in ~1 min, not after 10 attempts × backoff.
+  client.setMaxAttempts(4);
+  client.setRequestTimeout(60_000);
   return { client, network, operatorId, operatorKey };
 }
 

@@ -10,10 +10,11 @@ export function createDb(url: string, opts: { max?: number } = {}) {
   return drizzle(sql, { schema });
 }
 
-let cached: Db | null = null;
+const g = globalThis as unknown as { __trenchesDb?: Db };
+/** One pool per process, kept on globalThis so dev hot reloads do not open a new pool each time. */
 export function dbFromEnv(env: NodeJS.ProcessEnv = process.env): Db {
-  if (cached) return cached;
+  if (g.__trenchesDb) return g.__trenchesDb;
   if (!env.DATABASE_URL) throw new Error("DATABASE_URL is not set");
-  cached = createDb(env.DATABASE_URL);
-  return cached;
+  g.__trenchesDb = createDb(env.DATABASE_URL);
+  return g.__trenchesDb;
 }

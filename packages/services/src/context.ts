@@ -40,16 +40,18 @@ export interface Services {
   config: AppConfig;
 }
 
-let cached: Services | null = null;
+// Cached on globalThis so Next.js hot reloads reuse one Hedera client / Postgres pool instead of
+// leaking a new set of gRPC channels and connections on every module re-evaluation.
+const g = globalThis as unknown as { __trenchesServices?: Services | null };
 
 export function services(): Services {
-  if (cached) return cached;
+  if (g.__trenchesServices) return g.__trenchesServices;
   const config = configFromEnv();
   const { pub, wallet } = arkivFromEnv();
   if (!wallet) throw new Error("ARKIV_WRITER_KEY is not set");
   const hedera = hederaFromEnv();
   if (!hedera) throw new Error("HEDERA_OPERATOR_ID / HEDERA_OPERATOR_KEY not set");
-  cached = {
+  g.__trenchesServices = {
     db: dbFromEnv(),
     arkiv: new ArkivRepo(pub, wallet.client, wallet.address),
     hedera,
@@ -57,12 +59,12 @@ export function services(): Services {
     hs: hashscan(config.network),
     config,
   };
-  return cached;
+  return g.__trenchesServices;
 }
 
 /** Read-only Arkiv access for public pages (no writer needed, no Hedera). */
 export function arkivReader(): ArkivRepo {
-  if (cached) return cached.arkiv;
+  if (g.__trenchesServices) return g.__trenchesServices.arkiv;
   const { pub, wallet } = arkivFromEnv();
   return new ArkivRepo(pub, wallet?.client ?? null, wallet?.address ?? null);
 }
