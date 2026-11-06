@@ -20,7 +20,12 @@
     "smoke:flash": "tsx scripts/flash-smoke.ts",
     "smoke:arkiv": "tsx scripts/arkiv-smoke.ts",
     "smoke:hedera": "tsx scripts/hedera-smoke.ts",
-    "screenshot": "tsx scripts/screenshot.ts"
+    "screenshot": "tsx scripts/screenshot.ts",
+    "smoke:f1": "tsx scripts/f1-smoke.ts",
+    "db:migrate": "pnpm --filter @trenches/db migrate",
+    "db:generate": "pnpm --filter @trenches/db generate",
+    "e2e": "playwright test",
+    "dev:tick": "curl -s -X POST http://localhost:3000/api/dev/tick"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
@@ -30,7 +35,8 @@
     "tsx": "^4.19.0",
     "typescript": "^5.6.3",
     "viem": "^2.21.0",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.0",
+    "@playwright/test": "^1.48.0"
   },
   "type": "module"
 }
