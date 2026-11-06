@@ -61,43 +61,40 @@ export async function joinTrench(trenchId: string, trader: Address, idkitResult:
     throw e;
   }
 
-  // Public record: entry entity + profile (verifiedHuman). Failures are reported, not hidden.
-  let arkivRes: JoinResult["arkiv"];
-  try {
-    const r = await arkiv.createEntry(entry, trench.endAt);
-    await db.update(entries).set({ arkivEntityKey: r.entityKey }).where(and(eq(entries.trenchId, trenchId), eq(entries.trader, entry.trader)));
-    arkivRes = { entryKey: r.entityKey, txHash: r.txHash };
-  } catch (e) {
-    log.error({ trenchId, trader, err: (e as Error).message }, "arkiv createEntry failed");
-    arkivRes = { error: (e as Error).message };
-  }
-
-  let profileRes: JoinResult["profile"];
-  try {
-    const joined = await db.select({ trenchId: entries.trenchId }).from(entries).where(eq(entries.trader, entry.trader));
-    const existing = await arkiv.getProfile(entry.trader);
-    const profile: Profile = {
-      address: entry.trader,
-      verifiedHuman: true,
-      trenchesJoined: joined.length,
-      ...(existing?.bestFinish !== undefined ? { bestFinish: existing.bestFinish } : {}),
-      totalVolumeUsd: existing?.totalVolumeUsd ?? 0,
-      totalPnlUsd: existing?.totalPnlUsd ?? 0,
-    };
-    const r = await arkiv.upsertProfile(profile);
-    profileRes = { entityKey: r.entityKey, txHash: r.txHash };
-  } catch (e) {
-    log.error({ trader, err: (e as Error).message }, "arkiv upsertProfile failed");
-    profileRes = { error: (e as Error).message };
-  }
-
-  const hcs = await recordHcs(trenchId, trench.hedera.topicId, "entry.joined", {
-    trader: entry.trader,
-    joinedAt,
-    credential: outcome.identifier,
-    mocked: outcome.mocked,
-    arkivEntryKey: "entryKey" in arkivRes ? arkivRes.entryKey : null,
-  });
+  // Public record (Arkiv entry + profile) and the HCS log are independent of each other: run them
+  // concurrently. Each failure is reported in the response, never hidden.
+  const [arkivRes, profileRes, hcs] = await Promise.all([
+    (async (): Promise<JoinResult["arkiv"]> => {
+      try {
+        const r = await arkiv.createEntry(entry, trench.endAt);
+        await db.update(entries).set({ arkivEntityKey: r.entityKey }).where(and(eq(entries.trenchId, trenchId), eq(entries.trader, entry.trader)));
+        return { entryKey: r.entityKey, txHash: r.txHash };
+      } catch (e) {
+        log.error({ trenchId, trader, err: (e as Error).message }, "arkiv createEntry failed");
+        return { error: (e as Error).message };
+      }
+    })(),
+    (async (): Promise<JoinResult["profile"]> => {
+      try {
+        const joined = await db.select({ trenchId: entries.trenchId }).from(entries).where(eq(entries.trader, entry.trader));
+        const existing = await arkiv.getProfile(entry.trader);
+        const profile: Profile = {
+          address: entry.trader,
+          verifiedHuman: true,
+          trenchesJoined: joined.length,
+          ...(existing?.bestFinish !== undefined ? { bestFinish: existing.bestFinish } : {}),
+          totalVolumeUsd: existing?.totalVolumeUsd ?? 0,
+          totalPnlUsd: existing?.totalPnlUsd ?? 0,
+        };
+        const r = await arkiv.upsertProfile(profile);
+        return { entityKey: r.entityKey, txHash: r.txHash };
+      } catch (e) {
+        log.error({ trader, err: (e as Error).message }, "arkiv upsertProfile failed");
+        return { error: (e as Error).message };
+      }
+    })(),
+    recordHcs(trenchId, trench.hedera.topicId, "entry.joined", { trader: entry.trader, joinedAt, credential: outcome.identifier, mocked: outcome.mocked }),
+  ]);
 
   const { worldIdNullifier: _n, ...publicEntry } = entry;
   void _n;

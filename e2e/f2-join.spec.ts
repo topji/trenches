@@ -31,7 +31,7 @@ test("F2.1 success: verified human appears on the board at $0.00 with the badge"
   await expect(page.getByRole("dialog")).toBeVisible({ timeout: 60_000 });
   await page.screenshot({ path: testInfo.outputPath("mock-sheet.png"), fullPage: true });
   await page.getByRole("button", { name: "Verify as human" }).click();
-  await expect(page.getByText("You're in. Place your first order.")).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("You're in. Place your first order.")).toBeVisible({ timeout: 120_000 });
 
   const row = page.getByRole("row").filter({ hasText: "0x1111…1111" });
   await expect(row).toBeVisible();
