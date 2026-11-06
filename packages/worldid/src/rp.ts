@@ -19,7 +19,12 @@ export function signRpContext(opts: { rpId: string; signingKeyHex: string; actio
  * thing WORLD_MOCK mode trusts: a mocked result must carry a nonce this server signed within its TTL.
  * In-memory is fine for one API process; swap for the DB `issued_nonces` table in step 4 if the API scales out.
  */
-export class NonceRegistry {
+/** What the verifier needs from a nonce store: consume once, true if we issued it for this action and it is unexpired. */
+export interface NonceStore {
+  consume(nonce: string, action: string): boolean | Promise<boolean>;
+}
+
+export class NonceRegistry implements NonceStore {
   private readonly issued = new Map<string, { action: string; expiresAt: number }>();
 
   issue(ctx: RpContext, action: string): void {

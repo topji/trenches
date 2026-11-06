@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
 
 /** E2E against the local app with DEMO_MODE=true (ACCEPTANCE_TESTS.md §0). Screenshots land in test-results/. */

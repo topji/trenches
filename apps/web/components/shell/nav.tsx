@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { copy } from "@/lib/copy";
-import { Button } from "@/components/ui/button";
+import { WalletButton } from "@/components/auth/wallet-button";
 
 export function Nav() {
   return (
@@ -15,9 +15,7 @@ export function Nav() {
           <Link href="/dashboard" className="hover:text-text hidden sm:inline">{copy.nav.dashboard}</Link>
         </nav>
         <div className="ml-auto">
-          <Button variant="secondary" size="sm" disabled title="Wallet login arrives in step 4">
-            {copy.nav.connect}
-          </Button>
+          <WalletButton />
         </div>
       </div>
     </header>

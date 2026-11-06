@@ -1,7 +1,7 @@
 import { hashSignal } from "@worldcoin/idkit-core/hashing";
 import { ACCEPTED_IDENTIFIERS, idkitResultSchema, verifyErrorSchema, verifySuccessSchema, type IdKitResult } from "./schemas.js";
 import { canonicalNullifier } from "./nullifier.js";
-import type { NonceRegistry } from "./rp.js";
+import type { NonceStore } from "./rp.js";
 
 export const WORLD_VERIFY_BASE = "https://developer.world.org";
 
@@ -10,8 +10,8 @@ export interface VerifyOptions {
   expectedAction: string;
   expectedEnvironment: "production" | "staging" | "sandbox";
   expectedSignal: string;
-  /** When set, results must carry a nonce this server issued (single use). */
-  nonces?: NonceRegistry;
+  /** When set, results must carry a nonce this server issued (single use). In-memory or DB-backed. */
+  nonces?: NonceStore;
   /**
    * WORLD_MOCK=true (hackathon): skip the Developer Portal call and accept a well-formed result that
    * carries a server-issued nonce, matching action, environment and signal hash. Never accepts an
@@ -46,7 +46,7 @@ export async function verifyIdKitResult(raw: unknown, opts: VerifyOptions): Prom
   const expectedHash = hashSignal(opts.expectedSignal).toLowerCase();
   if ((item.signal_hash ?? "").toLowerCase() !== expectedHash) return fail(401, "signal_mismatch", "Proof was not issued for this Trench and wallet.");
 
-  if (opts.nonces && !opts.nonces.consume(result.nonce, opts.expectedAction)) return fail(401, "unknown_nonce", "Proof request was not issued by this server or has expired.");
+  if (opts.nonces && !(await opts.nonces.consume(result.nonce, opts.expectedAction))) return fail(401, "unknown_nonce", "Proof request was not issued by this server or has expired.");
 
   let nullifier: string;
   try {

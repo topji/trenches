@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { demoSession } from "./helpers";
 
 /**
  * F1 Create a Trench (ACCEPTANCE_TESTS.md §1 F1.1–F1.4). Hits real testnets (Hedera, Arkiv) and Neon.
@@ -12,10 +13,10 @@ function localInput(d: Date): string {
 }
 
 async function fillBasics(page: Page, name: string) {
+  await demoSession(page, ADMIN);
   await page.goto("/create");
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Prize pool (USDC)").fill("1.5");
-  await page.getByLabel("Your wallet address").fill(ADMIN);
 }
 
 test("F1.2 invalid forms show field-level errors and send nothing", async ({ page }) => {

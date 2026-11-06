@@ -172,6 +172,16 @@ export const hcsMessages = pgTable(
   (t) => ({ trenchIdx: index("hcs_messages_trench_idx").on(t.trenchId) }),
 );
 
+/** RP-context nonces we signed (World ID). Single use; the only thing WORLD_MOCK trusts. */
+export const issuedNonces = pgTable("issued_nonces", {
+  nonce: text("nonce").primaryKey(),
+  action: text("action").notNull(),
+  trenchId: text("trench_id"),
+  expiresAt: ts("expires_at").notNull(),
+  consumedAt: ts("consumed_at"),
+  createdAt: ts("created_at").notNull(),
+});
+
 export const jobs = pgTable("jobs", {
   name: text("name").primaryKey(),
   lastRunAt: ts("last_run_at"),

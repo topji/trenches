@@ -1,7 +1,8 @@
 "use client";
-import { createTrenchSchema, type Address } from "@trenches/core";
+import { createTrenchSchema } from "@trenches/core";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
+import { useSession } from "@/lib/session";
 import { clsx } from "clsx";
 import { copy } from "@/lib/copy";
 import { ASSET_PRESETS } from "@/lib/trench-view";
@@ -16,11 +17,10 @@ function toLocalInput(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export const ADMIN_STORAGE_KEY = "trenches.admin";
-
 /** One long form (DESIGN_SYSTEM §4). Field-level errors come from the same zod schema the API uses. */
 export function CreateForm({ demoMode }: { demoMode: boolean }) {
   const router = useRouter();
+  const session = useSession();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [startAt, setStartAt] = useState(() => toLocalInput(new Date(Date.now() + (demoMode ? 2 : 10) * 60_000)));
@@ -30,16 +30,6 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
   const [split, setSplit] = useState<string[]>(["50", "30", "20"]);
   const [entryRule, setEntryRule] = useState<"open" | "invite">("open");
   const [feeShare, setFeeShare] = useState("50");
-  const [admin, setAdmin] = useState("");
-  useEffect(() => {
-    // Remembered host address (DEMO shim until Privy lands in step 4); read after mount, never during SSR.
-    try {
-      const saved = window.sessionStorage.getItem(ADMIN_STORAGE_KEY);
-      if (saved) setAdmin(saved);
-    } catch {
-      /* storage unavailable */
-    }
-  }, []);
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +47,6 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
       prizeSplit: split.map((s) => Number(s) || 0),
       entryRule,
       adminFeeShareBps: Math.round(Number(feeShare) * 100),
-      adminAddress: admin.trim() as Address,
     };
   }
 
@@ -70,7 +59,6 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
         if (!next[key]) next[key] = issue.message;
       }
     }
-    if (!/^0x[0-9a-fA-F]{40}$/.test(admin.trim())) next.adminAddress = "Enter the host wallet address.";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -79,14 +67,14 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
     e.preventDefault();
     setFormError(null);
     if (!validate()) return;
+    if (session.ready && !session.authenticated) {
+      session.login();
+      return;
+    }
     setSubmitting(true);
     try {
-      try {
-        window.sessionStorage.setItem(ADMIN_STORAGE_KEY, admin.trim());
-      } catch {
-        /* storage unavailable */
-      }
-      const res = await fetch("/api/trenches", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload()) });
+      const headers = { "content-type": "application/json", ...(await session.authHeaders()) };
+      const res = await fetch("/api/trenches", { method: "POST", headers, body: JSON.stringify(payload()) });
       const body = (await res.json()) as { error?: string; field?: string; trench?: { id: string } };
       if (!res.ok || !body.trench) {
         if (body.field) setErrors({ [body.field]: body.error ?? "Invalid value." });
@@ -168,15 +156,13 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
       <Field label={f.feeShare} htmlFor="feeShare" helper={copy.create.helpers.feeShare} error={errors.adminFeeShareBps}>
         <input id="feeShare" type="number" inputMode="numeric" min="0" max="100" className={clsx(inputClass, "tabular")} value={feeShare} onChange={(e) => setFeeShare(e.target.value)} />
       </Field>
-      <Field label={f.admin} htmlFor="admin" helper={copy.create.helpers.admin} error={errors.adminAddress} className="lg:col-span-2">
-        <input id="admin" className={clsx(inputClass, "font-mono text-[13px]")} value={admin} onChange={(e) => setAdmin(e.target.value)} placeholder="0x…" spellCheck={false} autoComplete="off" />
-      </Field>
       <div className="lg:col-span-2 flex flex-col gap-2">
         <div>
-          <Button type="submit" loading={submitting}>
-            {copy.cta.createSubmit}
+          <Button type="submit" loading={submitting} disabled={!session.ready}>
+            {session.ready && !session.authenticated ? copy.nav.signIn : copy.cta.createSubmit}
           </Button>
         </div>
+        {session.ready && !session.authenticated && <p className="text-small text-muted">{copy.create.helpers.signIn}</p>}
         <InlineError>{formError}</InlineError>
       </div>
     </form>
