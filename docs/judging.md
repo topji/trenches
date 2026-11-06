@@ -21,11 +21,11 @@ Filled in as each step lands. Every row needs a file:line and, where applicable,
 ## World ID
 | Requirement | Proof | Status |
 |---|---|---|
-| IDKit in a functioning flow; Proof of Human verified server-side | server: `packages/worldid/src/verify.ts` (POST /api/v4/verify); widget in step 4 | server ready |
-| README: trust moment and minimum sufficient credential | step 10 | pending |
-| Success + cancel + invalid + duplicate paths | step 4 | pending |
-| `docs/worldid-debrief.md` | step 10 | pending |
-| README states proofs are mocked during the hackathon | step 10 | pending |
+| IDKit in a functioning flow; Proof of Human verified server-side | widget: `apps/web/components/trench/join-panel.tsx` (`IDKitRequestWidget`, `proofOfHuman`); server: `packages/worldid/src/verify.ts` + `packages/services/src/join.ts` (`POST /api/trenches/[id]/join`); entry entity [0x5baa…2d53](https://rabdi.explorer.arkiv.network/entity/0x5baa662724a84121df1672e1d872e4606437943e652a568ac51f21de55342d53), `entry.joined` [HCS tx](https://hashscan.io/testnet/transaction/0.0.11330265-1793999918-164082358) | ✓ (mocked proofs, see README) |
+| README: trust moment and minimum sufficient credential | text in `docs/worldid-debrief.md` §1; README in step 10 | partial |
+| Success + cancel + invalid + duplicate paths | `e2e/f2-join.spec.ts` F2.1–F2.4 green (mobile), screenshots in `test-results/` | ✓ |
+| `docs/worldid-debrief.md` | written (time to first success, friction, missing docs, one improvement) | ✓ draft |
+| README states proofs are mocked during the hackathon | `docs/worldid-debrief.md` §3; README in step 10 | partial |
 
 ## Hedera (No Solidity)
 | Requirement | Proof | Status |

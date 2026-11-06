@@ -83,6 +83,8 @@ Deliverables
 Done when: F2.1–F2.5 pass, including Playwright specs for all four paths in mocked mode.
 Needs from the builder: Privy app id + secret, World app id, action created, mock-mode instructions from the booth.
 
+Outcome (Sat 7 Nov, 03:10): done. F2.1–F2.5 green in `e2e/f2-join.spec.ts` (mobile); Privy login live; proofs mocked behind a server-signed nonce (no booth answer, no documented IDKit mock mode).
+
 ## Step 5 — Trade through Flash (F3, Market + DCA)
 **Goal:** real fills from the trader's own wallet, fee attached, visible in the app.
 

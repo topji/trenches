@@ -1,5 +1,32 @@
 # PROGRESS.md — newest first
 
+## Sat 7 Nov 2026, 03:10 IST — Step 4 done: join with World ID (F2.1–F2.5), Privy login
+
+**Works (live, testnet + Neon)**
+- Privy login (email + external wallet, embedded wallet for users without one, Base default) via `@privy-io/react-auth`; nav shows Connect wallet → short address + Sign out. Server session: `Authorization: Bearer <access token>` verified with `@privy-io/node`, wallet read from the identity token (`apps/web/lib/server/privy.ts`). The typed host-address field from step 3 is gone; the create and fund routes take the signed-in wallet.
+- World ID: `GET /api/world/rp-context` signs an `rp_context` (300 s) and persists the nonce (`issued_nonces`); `POST /api/trenches/[id]/join` verifies the IDKit result (`packages/worldid/src/verify.ts`: environment, action, signal hash = `trenchId:wallet`, credential `proof_of_human`/`orb`, single-use nonce, then the Portal unless mocked), stores `sha256(nullifier + TRENCH_SALT)` with a unique index per Trench, writes the `trenches.entry` and `trenches.profile` entities to Arkiv, and posts `entry.joined` to HCS.
+- Trench page: `JoinPanel` (real mode = `IDKitRequestWidget`, Proof of Human preset; mock mode = in-page sheet) and a real `<table>` leaderboard merging Arkiv `lb` rows with entrants at $0.00, human badge on every entrant, "You" tag + accent left border on the caller's row, scoreboard figures, 120 ms stagger.
+- Playwright `e2e/f2-join.spec.ts`, mobile, all five green (3.7 min): F2.1 success → "You're in", rank 1, $0.00, badge, `1 entrant`, `entry.joined` on HCS; F2.2 cancel → inline muted copy, zero join requests; F2.3 tampered signal → 401 "Verification failed. Try again.", plus direct malformed and unsolicited-nonce payloads → 401; F2.4 same mock human from another wallet → 409 "You've already entered this Trench.", same wallet via API → 409; F2.5 draft → "This Trench hasn't been funded yet.", ended → "This Trench has ended.", button disabled.
+- F2.1 run links: Trench entity https://rabdi.explorer.arkiv.network/entity/0x2cc8f30c2654069c1a45197e37163bd9b67fd17af4fe0a4b54168747ec0f72d7 · entry entity https://rabdi.explorer.arkiv.network/entity/0x5baa662724a84121df1672e1d872e4606437943e652a568ac51f21de55342d53 · profile entity (verifiedHuman=true) https://rabdi.explorer.arkiv.network/entity/0x8fa610a8811dbb9d54bacfeabb8d3efc0bef65f9a1203043bf277e651705547f · escrow https://hashscan.io/testnet/account/0.0.11345746 · topic https://hashscan.io/testnet/topic/0.0.11345747 · `entry.joined` https://hashscan.io/testnet/transaction/0.0.11330265-1793999918-164082358.
+- F1 suite still green after the session change (mobile). Desktop run: see the line below this entry once it lands.
+- `docs/integrations/privy.md` (exact 3.51 / node 0.38 API), `docs/worldid-debrief.md` (trust moment, credential choice, time to first success, friction, one improvement).
+
+**Decisions made**
+- **Mocked proofs, our way.** No documented IDKit mock mode (booth note was for Agent Pass), no phone at the venue. `WORLD_MOCK=true` skips only the Portal call; the result must still carry a nonce this server signed, the right action, environment and signal hash, so an unsolicited payload fails. The mock sheet keeps the four paths demonstrable. `WORLD_MOCK=false` runs the real widget + Portal on the same code path. Stated in the debrief and will be in the README.
+- Nonces live in Postgres, not memory, so verification works on serverless and across workers.
+- Demo session for e2e and scripted demos: `x-trenches-demo: <DEMO_SECRET>` + `x-trenches-address`, DEMO_MODE only; the browser UI never uses it (Playwright injects it via localStorage). Real users go through Privy.
+- `@privy-io/server-auth` is deprecated on npm → `@privy-io/node`. Identity token sent as `privy-id-token` to avoid the rate-limited user lookup.
+- Hedera SDK, gRPC, postgres, pino, @privy-io/node are explicit **server webpack externals**. `serverExternalPackages` silently stopped working once pnpm installed a second SDK instance (new peers from Privy); the bundled SDK then failed with "timeout exceeded" / `e.startsWith is not a function`. Cost ~1.5 h of the night.
+- Service singletons (db pool, Hedera client, Arkiv repo) are cached on `globalThis` so Next hot reloads reuse them. Hedera client: 4 attempts, 60 s request timeout, so a stuck call fails in a minute.
+- `TRENCH_SALT` was the placeholder; a random 32-byte hex is now in `.env`. Changing it later would orphan existing nullifier hashes.
+- e2e: `globalSetup` warms the dev server's lazy routes; dev script runs with a 6 GB heap (Next restarted itself on its memory threshold mid-suite).
+
+**Doesn't work yet**
+- Real (non-mocked) World verification is untested live: needs a phone with World App or the simulator at staging. Code path exists and is covered by unit tests with a mocked Portal.
+- Orders / Flash fill (step 5), leaderboard scoring (step 6), settlement (step 7).
+
+**Next:** step 5 on command. First order through the UI is also the deferred Flash gate; needs the builder's own wallet with a few USDC on Base.
+
 ## Fri 6 Nov 2026, 20:05 IST — Step 3 done: create → fund → live (F1.1–F1.4)
 
 **Works (live, testnet + Neon)**
