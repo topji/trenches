@@ -16,7 +16,9 @@ export function Providers({ children, demoMode }: { children: ReactNode; demoMod
       appId={appId}
       config={{
         loginMethods: ["email", "wallet"],
-        embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
+        // Headless signing for the embedded wallet: Privy's confirmation modal crashes under React 19
+        // ("Rendered fewer hooks") on token approvals; the order ticket narrates approve → sign itself.
+        embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" }, showWalletUIs: false },
         defaultChain: base,
         supportedChains: [base],
         appearance: { theme: "dark", accentColor: "#FF7A1A", walletChainType: "ethereum-only" },
