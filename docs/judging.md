@@ -13,7 +13,7 @@ Filled in as each step lands. Every row needs a file:line and, where applicable,
 | Requirement | Proof | Status |
 |---|---|---|
 | Writes via `@arkiv-network/sdk` to Rabdi testnet | `packages/arkiv/src/repo.ts`; create tx [0x70b0…1d87](https://rabdi.explorer.arkiv.network/tx/0x70b04fad99f6af2113c1287b60c821b3e348926fb38d80b5663e645b49811d87), patch tx [0x8574…3faf](https://rabdi.explorer.arkiv.network/tx/0x8574b3d3f826a24b4de64f9f7049cc2d3ae755bf017e426c9905ccef92583faf), [entity](https://rabdi.explorer.arkiv.network/entity/0x95277f9af5d962e24418a2bc789cf8b8d49c86da108b0c000cb1823cb23d8ac0) | ✓ live |
-| Leaderboard, discovery and profile pages read from Arkiv queries | step 6 / 8 | pending |
+| Leaderboard, discovery and profile pages read from Arkiv queries | discovery: `apps/web/app/trenches/page.tsx` (`listTrenches` → `trenches.trench` where status in funded/live); Trench page: `apps/web/app/t/[slug]/page.tsx` (`getTrenchBySlug`); leaderboard/profile in step 6 / 8 | partial |
 | README: writer wallet + one runnable query | step 10 | pending |
 | `arkiv/schema.md`, `friction.md`, `reach.md`, `why-arkiv.md`, `how-you-use-arkiv.md` | step 10 | pending |
 | MIT licence; "How AI was used" | `LICENSE` ✓ / step 10 | partial |
@@ -30,9 +30,9 @@ Filled in as each step lands. Every row needs a file:line and, where applicable,
 ## Hedera (No Solidity)
 | Requirement | Proof | Status |
 |---|---|---|
-| Zero Solidity (grep in `pnpm verify`) | step 9 | pending |
+| Zero Solidity (grep in `pnpm verify`) | no `.sol` files, no `pragma solidity` (checked at each step) | ✓ so far |
 | HTS + HCS + Scheduled Transactions + Mirror Node used | `packages/hedera/src/tokens.ts`, `topics.ts`, `schedules.ts`, `mirror.ts`; [token 0.0.11337181](https://hashscan.io/testnet/token/0.0.11337181), [topic 0.0.11337184](https://hashscan.io/testnet/topic/0.0.11337184), [fund tx](https://hashscan.io/testnet/transaction/0.0.11330265-1793957724-380422235), [payout tx](https://hashscan.io/testnet/transaction/0.0.11330265-1793957727-888524131), [schedule 0.0.11337186](https://hashscan.io/testnet/schedule/0.0.11337186) | ✓ live |
-| README: funding tx, payout tx, HCS topic with HashScan links | step 10 | pending |
+| README: funding tx, payout tx, HCS topic with HashScan links | funding tx [0.0.11330265-1793974478-382116623](https://hashscan.io/testnet/transaction/0.0.11330265-1793974478-382116623), topic [0.0.11340201](https://hashscan.io/testnet/topic/0.0.11340201); payout in step 7; README in step 10 | partial |
 | Demo video ≤ 5 min covers escrow funding and payout | step 10 | pending |
 
 ## ETHGlobal

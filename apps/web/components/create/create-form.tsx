@@ -1,7 +1,7 @@
 "use client";
 import { createTrenchSchema, type Address } from "@trenches/core";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { clsx } from "clsx";
 import { copy } from "@/lib/copy";
 import { ASSET_PRESETS } from "@/lib/trench-view";
@@ -30,13 +30,16 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
   const [split, setSplit] = useState<string[]>(["50", "30", "20"]);
   const [entryRule, setEntryRule] = useState<"open" | "invite">("open");
   const [feeShare, setFeeShare] = useState("50");
-  const [admin, setAdmin] = useState(() => {
+  const [admin, setAdmin] = useState("");
+  useEffect(() => {
+    // Remembered host address (DEMO shim until Privy lands in step 4); read after mount, never during SSR.
     try {
-      return window.sessionStorage.getItem(ADMIN_STORAGE_KEY) ?? "";
+      const saved = window.sessionStorage.getItem(ADMIN_STORAGE_KEY);
+      if (saved) setAdmin(saved);
     } catch {
-      return "";
+      /* storage unavailable */
     }
-  });
+  }, []);
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -149,7 +152,7 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
               onChange={(e) => setSplit((s) => s.map((x, j) => (j === i ? e.target.value : x)))}
             />
           ))}
-          <span className={clsx("text-small tabular ml-2", splitSum === 100 ? "text-muted" : "text-warn")}>{copy.create.helpers.splitSum(splitSum)}</span>
+          <span className={clsx("text-small tabular ml-2 whitespace-nowrap", splitSum === 100 ? "text-muted" : "text-warn")}>{copy.create.helpers.splitSum(splitSum)}</span>
         </div>
       </Field>
       <Field label={f.entryRule} error={errors.entryRule}>

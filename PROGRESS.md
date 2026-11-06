@@ -1,5 +1,30 @@
 # PROGRESS.md — newest first
 
+## Fri 6 Nov 2026, 20:05 IST — Step 3 done: create → fund → live (F1.1–F1.4)
+
+**Works (live, testnet + Neon)**
+- `packages/db`: Drizzle schema for trenches, escrow_keys (AES-256-GCM), entries, world_verifications (unique on trenchId+nullifierHash), orders, fills, leaderboard, payouts, fee_ledger, hcs_messages, jobs. Migration `0000` applied to Neon (`pnpm db:migrate`).
+- `packages/services`: `createTrench` (Hedera escrow account + topic → Arkiv `trenches.trench` entity → Postgres + encrypted key → HCS `trench.created`), `fundTrench` (treasury HTS transfer → status funded, Arkiv patch in place, HCS `trench.funded`), `activateTrenches` (funded→live at startAt, live→ended at endAt, Arkiv patch + HCS `trench.live`/`trench.ended`), Mirror escrow balance. An Arkiv failure is stored as pending and shown in the UI, never hidden.
+- `apps/worker`: `activateTrenches` every 30 s, non-overlapping.
+- Routes: `POST/GET /api/trenches`, `GET /api/trenches/[id]` (Arkiv + Mirror + HCS log + every explorer link), `POST /api/trenches/[id]/fund`, `POST /api/dev/tick` (DEMO_MODE: run the worker job once).
+- Pages: `/create` (one long form, live split sum, field-level errors from the shared zod schema), `/create/[id]/fund` (escrow + topic + Arkiv record with links, one "Fund escrow" button), `/t/[slug]` (header from the Arkiv entity: countdown hero, pool, status pill, escrow line with HashScan/topic/funding/Arkiv links, on-chain log), `/trenches` (Arkiv discovery query, sorted by pool, All/Live/Upcoming/Ended chips).
+- `scripts/f1-smoke.ts` (services layer, no HTTP) PASS in 47 s: https://hashscan.io/testnet/account/0.0.11340033 (escrow), https://hashscan.io/testnet/topic/0.0.11340034 (topic, 3 messages), https://rabdi.explorer.arkiv.network/entity/0xdc70684a25b67bccf01a34372bbbffffeb1b8f174bbf8bfa79027bc58ad8b3bf (entity, patched draft→funded→live), funding tx https://hashscan.io/testnet/transaction/0.0.11330265-1793973448-984972714.
+- Playwright `e2e/f1-create.spec.ts` (mobile + desktop): F1.2 field errors with zero requests; F1.1 create → funding screen with HashScan links + Arkiv entity link; F1.3 fund → `funded`, fundingTxId, `trench.funded` on HCS, shows in discovery, Trench page reads from Arkiv (`source: "arkiv"`); F1.4 worker tick after startAt → Live pill. Example run: escrow https://hashscan.io/testnet/account/0.0.11340200, topic https://hashscan.io/testnet/topic/0.0.11340201, funding https://hashscan.io/testnet/transaction/0.0.11330265-1793974478-382116623, entity https://rabdi.explorer.arkiv.network/entity/0xc6ff13edef28a7d629a74eda60f847065b661a1ab5651de77d26e81ad9812972.
+- Screenshots at 390 px reviewed: tokens only, no shadows, no all-caps, rows not cards. Two wraps fixed (split sum, Arkiv link on the funding screen).
+
+**Decisions made**
+- Host identity before Privy (step 4): in DEMO_MODE the create form has a "Your wallet address" field and mutating routes read it from the body (`lib/server/session.ts`). Step 4 swaps that helper for the Privy session; the form field goes away.
+- Migrations live in `packages/db/drizzle` (spec said `apps/web/drizzle`); the worker needs the same schema, so the db package owns it.
+- Next.js must treat `@hiero-ledger/sdk`, `@grpc/grpc-js`, `postgres`, `pino` as server externals, and they must be direct deps of `apps/web` for that to work under pnpm. Bundled, the Hedera SDK's gRPC never connects ("timeout exceeded" after 15 min). Also `extensionAlias` so workspace `.js` specifiers resolve to `.ts`.
+- `packages/core` uses Web Crypto, not `node:crypto`, so the create form can run the same zod schema client-side.
+- Status pill is time-aware: a persisted `live` Trench whose window ended reads "Ended"; under 10 min left reads "Ending soon".
+- Each e2e run creates a real escrow account (1 HBAR) and a topic on testnet; operator had 960 HBAR.
+
+**Doesn't work yet**
+- Join (step 4), orders (step 5), leaderboard rows (step 6), settlement (step 7). Flash fill still unverified live (deferred to step 5).
+
+**Next:** step 4 on command. Needs Privy app id + secret (set), World app id + RP id + signing key (set), and the booth's answer on IDKit mock mode.
+
 ## Fri 6 Nov 2026, 15:10 IST — Step 2 live: Arkiv and Hedera smokes PASS; Flash fill deferred to step 5
 
 **Works (live, testnet)**

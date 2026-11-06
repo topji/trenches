@@ -47,9 +47,10 @@ test("F1.1 + F1.3 + F1.4 create, fund, go live", async ({ page }, testInfo) => {
   test.slow();
   const name = `E2E Trench ${Date.now().toString(36)}`;
   await fillBasics(page, name);
-  const start = new Date(Date.now() + 2 * 60_000);
+  // datetime-local has minute precision: start on the next whole minute at least 90 s away
+  const start = new Date(Math.ceil((Date.now() + 90_000) / 60_000) * 60_000);
   await page.getByLabel("Starts").fill(localInput(start));
-  await page.getByLabel("Ends").fill(localInput(new Date(start.getTime() + 10 * 60_000)));
+  await page.getByLabel("Ends").fill(localInput(new Date(start.getTime() + 20 * 60_000))); // > 10 min so the pill reads Live, not Ending soon
   await page.screenshot({ path: testInfo.outputPath("create-form.png"), fullPage: true });
   await page.getByRole("button", { name: "Create Trench" }).click();
 
@@ -91,11 +92,13 @@ test("F1.1 + F1.3 + F1.4 create, fund, go live", async ({ page }, testInfo) => {
   await expect(page.getByRole("link", { name: /Public record on Arkiv/ })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("trench-upcoming.png"), fullPage: true });
 
-  // F1.4: worker tick with a pretend clock just past startAt → Live
-  const tick = await page.request.post("/api/dev/tick", { data: { now: new Date(start.getTime() + 1000).toISOString() } });
+  // F1.4: once startAt passes, one worker tick flips funded → live (the cron does this every 30 s)
+  await page.waitForTimeout(Math.max(0, start.getTime() + 1000 - Date.now()));
+  const tick = await page.request.post("/api/dev/tick", { data: {} });
   const tickBody = (await tick.json()) as { transitions: { trenchId: string; to: string }[] };
   expect(tickBody.transitions.some((t) => t.trenchId === trenchId && t.to === "live")).toBe(true);
   await page.reload();
   await expect(page.getByText("Live", { exact: true })).toBeVisible();
+  await expect(page.getByText("left", { exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("trench-live.png"), fullPage: true });
 });

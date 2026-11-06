@@ -34,14 +34,14 @@ export default async function FundPage({ params, searchParams }: { params: Promi
           <dt className="text-small text-muted mb-1">{copy.funding.escrowLabel}</dt>
           <dd className="hash-block flex items-center justify-between gap-4">
             <span>{t.hedera.escrowAccountId}</span>
-            <ExplorerLink href={explorers.hashscanAccount(t.hedera.escrowAccountId)} label="HashScan" />
+            <ExplorerLink href={explorers.hashscanAccount(t.hedera.escrowAccountId)} label="HashScan" className="shrink-0" />
           </dd>
         </div>
         <div>
           <dt className="text-small text-muted mb-1">{copy.funding.topicLabel}</dt>
           <dd className="hash-block flex items-center justify-between gap-4">
             <span>{t.hedera.topicId}</span>
-            <ExplorerLink href={explorers.hashscanTopic(t.hedera.topicId)} label="HashScan" />
+            <ExplorerLink href={explorers.hashscanTopic(t.hedera.topicId)} label="HashScan" className="shrink-0" />
           </dd>
         </div>
         <div>
@@ -49,8 +49,8 @@ export default async function FundPage({ params, searchParams }: { params: Promi
           <dd className="hash-block flex items-center justify-between gap-4">
             {row.arkivEntityKey ? (
               <>
-                <span className="truncate">{row.arkivEntityKey}</span>
-                <ExplorerLink href={explorers.arkivEntity(row.arkivEntityKey)} label="Arkiv" />
+                <span className="truncate min-w-0">{row.arkivEntityKey}</span>
+                <ExplorerLink href={explorers.arkivEntity(row.arkivEntityKey)} label="Arkiv" className="shrink-0 whitespace-nowrap" />
               </>
             ) : (
               <span className="text-warn">{copy.funding.arkivPending}</span>

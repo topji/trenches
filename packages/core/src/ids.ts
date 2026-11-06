@@ -1,5 +1,11 @@
 import { ulid } from "ulid";
-import { randomBytes } from "node:crypto";
+
+/** Web Crypto (Node ≥ 19 and browsers): core must stay importable from client components. */
+function randomBytes(len: number): Uint8Array {
+  const out = new Uint8Array(len);
+  globalThis.crypto.getRandomValues(out);
+  return out;
+}
 
 export function newId(): string {
   return ulid();

@@ -68,6 +68,8 @@ Deliverables
 Done when: F1.1–F1.4 acceptance tests pass; the Trench page and a basic `/trenches` list read from Arkiv.
 Needs from the builder: `DATABASE_URL` (Neon or local Docker).
 
+Outcome (Fri 6 Nov): done. `pnpm smoke:f1` and `pnpm e2e` (F1.1–F1.4, mobile + desktop) pass against Neon + testnets. Host address is typed in until Privy lands in step 4.
+
 ## Step 4 — Join with World ID (F2)
 **Goal:** one human, one slot, verified on the server.
 
