@@ -169,10 +169,17 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
   const f = copy.order.fields;
   const busy = step !== "idle";
   const assetBalance = balances?.balances[asset.toLowerCase()];
+  /** Display rounding. Never used for the Max amount (see floorTo). */
   const fmt = (v: string | undefined, dp: number) => (v === undefined ? "…" : Number(v).toFixed(dp).replace(/\.?0+$/, "") || "0");
+  /** Round DOWN so Max never exceeds the wallet balance (Flash rejects "balance 0.000878… is less than required 0.000879"). */
+  const floorTo = (v: string, dp: number) => {
+    const [int, frac = ""] = v.split(".");
+    const cut = frac.slice(0, dp).replace(/0+$/, "");
+    return cut ? `${int}.${cut}` : int!;
+  };
   const useMax = () => {
     const v = side === "buy" ? balances?.usdc : assetBalance;
-    if (v !== undefined) setAmount(fmt(v, side === "buy" ? 2 : 6));
+    if (v !== undefined) setAmount(floorTo(v, side === "buy" ? 2 : 8));
   };
   return (
     <section aria-labelledby="ticket-title" className="bg-sunken border border-line rounded-panel p-4 flex flex-col gap-4 lg:max-w-[480px]">

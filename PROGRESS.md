@@ -1,6 +1,6 @@
 # PROGRESS.md — newest first
 
-## Sat 7 Nov 2026, 04:25 IST — Step 5 built: Flash order path (Market + DCA), fills poller; first live fill pending the builder's wallet
+## Sat 7 Nov 2026, 05:10 IST — Step 5 done: Flash Market, Sell and DCA fills live from the builder's wallet
 
 **Works (live quotes against Flash, Base mainnet)**
 - `POST /api/trenches/[id]/orders/quote`: window (`canTrade`), entered, allowed-asset and 1 USDC minimum checks → `buildQuoteRequest` with `flashIntegratorFeeBps=30` and the trader as `funderAddress` → Flash quote stored in `quotes` (server-side source of truth for fee/asset/qty at submit). `preview: true` for the ticket's live line.
@@ -15,7 +15,11 @@
 - Market buy, 2 USDC → 0.000878693540802360 WETH at $2,276.11, Flash order `ffb3549f-f2ed-496e-9825-d2b27b52e5c2`, `ORDER_STATUS_FILLED` / `REASON_FULLY_FILLED`. Signed in the builder's Privy wallet (`0xd3ad…d00c`), approval + EIP-712 signature in the browser, platform fee 30 bps attached.
 - Fill tx https://basescan.org/tx/0x9a1708462e0b7f29ee4b730e4233c1db05494f3c5529982ffcdce75009a0a7b2 — ingested by the worker within one 15 s tick; `fee_ledger`: integrator fee 0.006 USDC → platform 0.003 / host 0.003 (adminFeeShareBps 5000) (F3.5).
 - The first attempt died in Privy's transaction modal ("Rendered fewer hooks", `isActive` prop) under React 19.3; pinning React to 19.1.1 (the version Privy's starter uses) fixed it.
-- Still to run by the builder: a DCA (3 USDC × 3 legs) to show multi-leg ingestion.
+- **Sell + DCA done (04:45–05:05 IST), all from the builder's wallet through the ticket:**
+  - Market sell 0.00087 WETH → 1.924893 USDC at $2,212.52, Flash `0f2e48bd…`, tx https://basescan.org/tx/0x90b526ebf80b87cd1bdd2ecc7785b1940d25be45e9e0fbf39bb7d648f454fbd8.
+  - A first sell attempt was rejected by Flash and stored as `failed` with the verbatim message "flash order submission failed: insufficient source asset balance: balance 0.00087869354080236 is less than required 0.000879" (F3.4 live). Cause: the ticket's Max button rounded the balance up at 6 dp; it now rounds down.
+  - DCA 3 USDC, 3 legs, 60 s interval → Flash `twap` (`durationSeconds` 300, `twapBucketCount` 3), order `225730c0…`, `ORDER_STATUS_FILLED` with **3 fills ingested as they landed**: https://basescan.org/tx/0x2da38a2c625e02b8d73a7a915b67621f96d36f6471d23748a90a8db2f2ee5f66 (0.000440 WETH / 1.00 USDC), https://basescan.org/tx/0xb713b147b753ddeb2a6862049e1d34dea74eab407208b5217bb05ca13b59b630 (0.000453 / 1.05), https://basescan.org/tx/0xa19d575d069660a4eba83d6417201d6f2061172dc8f1b07f7c8ca56e8a5d44e9 (0.000411 / 0.95). Average $2,301.24. Integrator fee per leg ≈ 0.003 USDC; Flash's own fees on $1 legs are larger (0.017–0.038), which scoring subtracts.
+  - Privy's embedded-wallet confirmation modal crashed again on the WETH approval ("Rendered fewer hooks"); switched to headless signing (`embeddedWallets.showWalletUIs: false`), the ticket narrates approve → sign itself. The approval had been mined before the crash (unlimited allowance to Flash's settlement contract for USDC and WETH).
 
 **Decisions made**
 - Quotes are persisted server-side and the client only returns `{ quoteId, userSignature }`; nothing about fee, asset or qty is trusted from the browser.
@@ -28,7 +32,7 @@
 **Doesn't work yet**
 - No live fill yet (above). Leaderboard scoring (step 6), settlement (step 7), Bracket/Limit/TWAP (steps 7–8).
 
-**Next:** builder places the Market + DCA orders; log the Basescan links here and in `docs/judging.md`; then step 6 on command.
+**Next:** step 6 on command (leaderboard scoring from these fills, `lb` entities on Arkiv, HCS snapshots).
 
 ## Sat 7 Nov 2026, 03:10 IST — Step 4 done: join with World ID (F2.1–F2.5), Privy login
 

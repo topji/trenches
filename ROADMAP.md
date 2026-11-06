@@ -97,7 +97,7 @@ Deliverables
 Done when: F3.1, F3.3–F3.5 pass and a DCA with 3 legs ingests fills as they land.
 Needs from the builder: nothing new beyond step 2.
 
-Outcome (Sat 7 Nov, 04:30): done. F3.1 live fill from the builder's wallet (Basescan 0x9a17…a7b2), F3.3–F3.5 green (`e2e/f3-orders.spec.ts`). The 3-leg DCA ingest is the builder's next click.
+Outcome (Sat 7 Nov, 05:10): done. Market buy, market sell and a 3-leg DCA all filled live from the builder's wallet (5 Basescan txs in `PROGRESS.md`), F3.3–F3.5 green (`e2e/f3-orders.spec.ts`), a real Flash rejection shown verbatim.
 
 ## Step 6 — Live leaderboard on Arkiv (F4)
 **Goal:** the loudest thing on the page, backed by a public query.
