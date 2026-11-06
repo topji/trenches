@@ -54,3 +54,18 @@ export async function createTrenchViaApi(
   }
   return { id: body.trench.id, slug: body.trench.slug, status };
 }
+
+/** Poll the public Trench API until the Arkiv-backed status matches (Arkiv lags Postgres by a few seconds). */
+export async function waitForStatus(request: APIRequestContext, id: string, status: string, timeoutMs = 90_000): Promise<void> {
+  const until = Date.now() + timeoutMs;
+  let last = "";
+  while (Date.now() < until) {
+    const res = await request.get(`/api/trenches/${id}`);
+    if (res.ok()) {
+      last = ((await res.json()) as { trench: { status: string } }).trench.status;
+      if (last === status) return;
+    }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  throw new Error(`Trench ${id} is "${last}", expected "${status}" within ${timeoutMs} ms`);
+}

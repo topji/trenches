@@ -49,6 +49,8 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("idle");
   const [toast, setToast] = useState<string | null>(null);
+  const [balances, setBalances] = useState<{ eth: string; usdc: string; balances: Record<string, string> } | null>(null);
+  const [balanceKey, setBalanceKey] = useState(0);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const symbol = assets.find((a) => a.address === asset)?.symbol ?? "";
@@ -70,6 +72,25 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
     if (!res.ok) throw new Error(body.error ?? "Couldn't get a quote.");
     return body;
   }
+
+  // Wallet balances (on-chain, via the server): refreshed on mount, after each order, and every 30 s.
+  useEffect(() => {
+    if (!session.address) return;
+    let cancelled = false;
+    const load = () =>
+      fetch(`/api/wallet/balances?address=${session.address}&assets=${assets.map((a) => a.address).join(",")}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((b) => {
+          if (!cancelled && b) setBalances(b as { eth: string; usdc: string; balances: Record<string, string> });
+        })
+        .catch(() => undefined);
+    void load();
+    const id = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [session.address, assets, balanceKey]);
 
   // Live quote line, debounced; informational only (the order re-quotes at signing time).
   useEffect(() => {
@@ -135,6 +156,7 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
       const body = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(body.error ?? "Order rejected.");
       setToast(copy.order.placed);
+      setBalanceKey((k) => k + 1);
       onPlaced?.();
     } catch (e) {
       const msg = (e as { message?: string }).message ?? "Order failed.";
@@ -146,6 +168,12 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
 
   const f = copy.order.fields;
   const busy = step !== "idle";
+  const assetBalance = balances?.balances[asset.toLowerCase()];
+  const fmt = (v: string | undefined, dp: number) => (v === undefined ? "…" : Number(v).toFixed(dp).replace(/\.?0+$/, "") || "0");
+  const useMax = () => {
+    const v = side === "buy" ? balances?.usdc : assetBalance;
+    if (v !== undefined) setAmount(fmt(v, side === "buy" ? 2 : 6));
+  };
   return (
     <section aria-labelledby="ticket-title" className="bg-sunken border border-line rounded-panel p-4 flex flex-col gap-4 lg:max-w-[480px]">
       <h2 id="ticket-title" className="text-h2">{copy.order.title}</h2>
@@ -189,7 +217,19 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
         </Field>
       </div>
 
-      <Field label={side === "buy" ? f.amountUsdc : `${f.amount} (${symbol})`} htmlFor="amount">
+      <Field
+        label={side === "buy" ? f.amountUsdc : `${f.amount} (${symbol})`}
+        htmlFor="amount"
+        helper={
+          balances && (
+            <span className="tabular">
+              {copy.order.balance}: {side === "buy" ? `${fmt(balances.usdc, 2)} USDC` : `${fmt(assetBalance, 6)} ${symbol}`}
+              {" · "}
+              <button type="button" onClick={useMax} className="underline underline-offset-2 hover:text-text">{copy.order.max}</button>
+            </span>
+          )
+        }
+      >
         <div className="relative">
           <input id="amount" type="number" inputMode="decimal" min="0" step="any" className={clsx(inputClass, "tabular pr-16")} value={amount} onChange={(e) => setAmount(e.target.value)} />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-small text-muted">{side === "buy" ? "USDC" : symbol}</span>
@@ -207,6 +247,13 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
         </div>
       )}
 
+      {balances && (
+        <p className="text-small text-muted tabular flex flex-wrap gap-x-4" aria-label={copy.order.balances}>
+          <span>{fmt(balances.usdc, 2)} USDC</span>
+          <span>{fmt(assetBalance, 6)} {symbol}</span>
+          <span>{fmt(balances.eth, 5)} ETH</span>
+        </p>
+      )}
       <p className="text-small text-muted tabular min-h-[20px]" aria-live="polite">
         {quote
           ? copy.order.quoteLine(side === "buy" ? Number(quote.to.amount).toPrecision(5) : formatUsd(Number(quote.to.notional)), side === "buy" ? quote.symbol : "USDC", formatUsd(quote.priceUsd), Number(quote.feeUsd).toFixed(4))

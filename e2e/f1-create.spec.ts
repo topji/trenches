@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { demoSession } from "./helpers";
+import { demoSession, waitForStatus } from "./helpers";
 
 /**
  * F1 Create a Trench (ACCEPTANCE_TESTS.md §1 F1.1–F1.4). Hits real testnets (Hedera, Arkiv) and Neon.
@@ -97,8 +97,7 @@ test("F1.1 + F1.3 + F1.4 create, fund, go live", async ({ page }, testInfo) => {
   await page.waitForTimeout(Math.max(0, start.getTime() + 1000 - Date.now()));
   // The worker (every 30 s) may claim the transition first; either way the Trench must now be live.
   await page.request.post("/api/dev/tick", { data: { trenchId } });
-  const after = (await (await page.request.get(`/api/trenches/${trenchId}`)).json()) as { trench: { status: string } };
-  expect(after.trench.status).toBe("live");
+  await waitForStatus(page.request, trenchId, "live");
   await page.reload();
   await expect(page.getByText("Live", { exact: true })).toBeVisible();
   await expect(page.getByText("left", { exact: true })).toBeVisible();

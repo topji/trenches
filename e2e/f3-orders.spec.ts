@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createTrenchViaApi, demoHeaders, demoSession, type CreatedTrench } from "./helpers";
+import { createTrenchViaApi, demoHeaders, demoSession, waitForStatus, type CreatedTrench } from "./helpers";
 
 /**
  * F3 Trade inside the Trench — the API guards (F3.3) and the ticket UI, against live Flash quotes.
@@ -23,8 +23,7 @@ test.beforeAll(async ({ request }) => {
   live = await createTrenchViaApi(request, ADMIN, { name: `F3 live ${tag}`, startInMs: -60_000, durationMs: 30 * 60_000, fund: true });
   // The worker (every 30 s) may claim the transition first; either way the Trench must now be live.
   await request.post("/api/dev/tick", { data: { trenchId: live.id } });
-  const after = (await (await request.get(`/api/trenches/${live.id}`)).json()) as { trench: { status: string } };
-  expect(after.trench.status).toBe("live");
+  await waitForStatus(request, live.id, "live");
   upcoming = await createTrenchViaApi(request, ADMIN, { name: `F3 upcoming ${tag}`, startInMs: 20 * 60_000, durationMs: 30 * 60_000, fund: true });
 });
 
