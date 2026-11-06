@@ -5,8 +5,8 @@ Filled in as each step lands. Every row needs a file:line and, where applicable,
 ## Definitive Flash
 | Requirement | Proof | Status |
 |---|---|---|
-| Market, DCA (TWAP) and Bracket orders through Flash with `flashIntegratorFeeBps` | `packages/flash/src/orders.ts` `buildQuoteRequest` (fee on every quote); `packages/services/src/orders.ts` `quoteOrder`/`submitOrder`; ticket `apps/web/components/trench/order-ticket.tsx`; live quotes with fee in `e2e/f3-orders.spec.ts` | Market + DCA wired, live fill pending builder wallet; Bracket step 7 |
-| On-chain fills (Base tx hashes) | step 5 | pending |
+| Market, DCA (TWAP) and Bracket orders through Flash with `flashIntegratorFeeBps` | `packages/flash/src/orders.ts` `buildQuoteRequest` (fee on every quote); `packages/services/src/orders.ts` `quoteOrder`/`submitOrder`; ticket `apps/web/components/trench/order-ticket.tsx`; live quotes with fee in `e2e/f3-orders.spec.ts` | Market live-filled; DCA quoted live, legs pending; Bracket step 7 |
+| On-chain fills (Base tx hashes) | market buy via the UI: [0x9a17…a7b2](https://basescan.org/tx/0x9a1708462e0b7f29ee4b730e4233c1db05494f3c5529982ffcdce75009a0a7b2) (Flash order `ffb3549f…`, fee 0.006 USDC → ledger 0.003/0.003); DCA legs to follow | ✓ live |
 | Demo video posted on Discord and X tagging @DefinitiveFi | step 10 | pending |
 
 ## Arkiv

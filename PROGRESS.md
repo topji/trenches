@@ -11,8 +11,11 @@
 - `e2e/f3-orders.spec.ts` green (mobile, 3.2 min): F3.3 guards (403 not entered, 409 not live, 400 wrong asset, 400 below minimum, exact copy); market + DCA quotes with fee ≈ $0.009 on $3; ticket renders the quote line, Bracket disabled, DCA fields; F3.4 bad signature → Flash error stored as `failed` and shown inline.
 - Live Trench for the gate: `/t/flash-gate-trench-1syb` (`01M6SEX2Q1PQD42NG4MNY4TMVR`, WETH + cbBTC, 6 h, pool 10). Builder's wallet `0xd3ad26714e5ef9583d9b441146e14a8e3913d00c` holds 5 USDC + 0.0018 ETH on Base, is joined, and has fetched valid quotes (2 USDC → 0.000886 WETH, fee 0.006).
 
-**Blocked on the builder (not a failure)**
-- **F3.1 first live fill**: the first attempt died in Privy's transaction modal ("Rendered fewer hooks", `isActive` prop) under React 19.3; React is now pinned to 19.1.1 (the version Privy's starter uses). Awaiting a retry: Market buy 2 USDC WETH, then DCA 3 USDC × 3 legs to prove multi-leg ingestion.
+**Flash gate passed (Sat 7 Nov, 04:22 IST) — first live fill through the UI**
+- Market buy, 2 USDC → 0.000878693540802360 WETH at $2,276.11, Flash order `ffb3549f-f2ed-496e-9825-d2b27b52e5c2`, `ORDER_STATUS_FILLED` / `REASON_FULLY_FILLED`. Signed in the builder's Privy wallet (`0xd3ad…d00c`), approval + EIP-712 signature in the browser, platform fee 30 bps attached.
+- Fill tx https://basescan.org/tx/0x9a1708462e0b7f29ee4b730e4233c1db05494f3c5529982ffcdce75009a0a7b2 — ingested by the worker within one 15 s tick; `fee_ledger`: integrator fee 0.006 USDC → platform 0.003 / host 0.003 (adminFeeShareBps 5000) (F3.5).
+- The first attempt died in Privy's transaction modal ("Rendered fewer hooks", `isActive` prop) under React 19.3; pinning React to 19.1.1 (the version Privy's starter uses) fixed it.
+- Still to run by the builder: a DCA (3 USDC × 3 legs) to show multi-leg ingestion.
 
 **Decisions made**
 - Quotes are persisted server-side and the client only returns `{ quoteId, userSignature }`; nothing about fee, asset or qty is trusted from the browser.
