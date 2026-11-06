@@ -35,9 +35,21 @@ importers:
 
   apps/web:
     dependencies:
+      '@trenches/arkiv':
+        specifier: workspace:*
+        version: link:../../packages/arkiv
       '@trenches/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@trenches/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@trenches/hedera':
+        specifier: workspace:*
+        version: link:../../packages/hedera
+      '@trenches/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -87,6 +99,9 @@ importers:
       '@trenches/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@trenches/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
