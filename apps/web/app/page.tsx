@@ -11,6 +11,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Leaderboard } from "@/components/trench/leaderboard";
+import { Podium } from "@/components/clans/podium";
 
 export const dynamic = "force-dynamic";
 
@@ -61,16 +62,16 @@ export default async function LandingPage() {
             <ButtonLink href="/seasons" variant="secondary">{copy.cta.browse}</ButtonLink>
           </div>
           {st && (
-            <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-line">
+            <dl className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 ["Seasons", String(st.seasons)],
                 ["Humans", String(st.humans)],
                 ["Volume", formatCompactUsd(st.volume)],
                 ["Paid out", formatUsd(st.paid)],
-              ].map(([k, v]) => (
-                <div key={k} className="stat">
+              ].map(([k, v], i) => (
+                <div key={k} className="panel-sunken px-4 py-3 stat">
                   <dt className="eyebrow">{k}</dt>
-                  <dd className="stat-figure">{v}</dd>
+                  <dd className={clsx("stat-figure", i === 3 && "text-gain")}>{v}</dd>
                 </div>
               ))}
             </dl>
@@ -107,17 +108,7 @@ export default async function LandingPage() {
           {top.length === 0 ? (
             <EmptyState action={<ButtonLink href="/create-trench" size="sm">{copy.clans.create}</ButtonLink>}>{copy.clans.empty}</EmptyState>
           ) : (
-            <ol className="border-t border-line">
-              {top.map((r, i) => (
-                <li key={r.clanId} className="row-hover">
-                  <Link href={`/trench/${r.tag}`} className="grid grid-cols-[40px_1fr_auto] items-center gap-x-4 h-14 border-b border-line hover:no-underline">
-                    <span className={clsx("font-scoreboard text-figure", rankTone[i])}>{r.rank}</span>
-                    <span className="min-w-0 truncate font-semibold"><span className="font-mono text-[13px] text-muted">[{r.tag}]</span> {r.name}</span>
-                    <span className="font-scoreboard text-figure tabular">{r.score.toFixed(1)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ol>
+            <Podium rows={top.map((r) => ({ rank: r.rank, tag: r.tag, name: r.name, score: r.score, members: r.members }))} />
           )}
         </section>
 

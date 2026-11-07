@@ -11,6 +11,7 @@ import { pillFor } from "@/lib/trench-view";
 import { ClanActions } from "@/components/clans/clan-actions";
 import { HumanBadge } from "@/components/ui/human-badge";
 import { StatusPill } from "@/components/ui/status-pill";
+import { Bar, Medal, TagBadge, TitleChip } from "@/components/ui/medal";
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +37,14 @@ export default async function ClanPage({ params }: { params: Promise<{ tag: stri
   const [ids, stats] = await Promise.all([identitiesFor(traders), memberSeasons(traders, season)]);
   const mine = scores.find((s) => s.clanId === clan.id);
   const t = copy.clans.membersTable;
+  const maxContribution = Math.max(1, ...[...stats.values()].map((m) => Math.abs(m.contribution)));
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-small text-muted">[{clan.tag}]</p>
-            <h1 className="text-h1">{clan.name}</h1>
+            <p className="flex items-center gap-2"><TagBadge tag={clan.tag} />{mine && <Medal rank={mine.rank} />}</p>
+            <h1 className="text-h1 mt-2">{clan.name}</h1>
             {clan.description && <p className="text-muted mt-2 max-w-[60ch]">{clan.description}</p>}
           </div>
           <div className="text-right">
@@ -79,9 +81,12 @@ export default async function ClanPage({ params }: { params: Promise<{ tag: stri
                       {displayName(m.trader, id)} <HumanBadge />
                     </Link>
                   </td>
-                  <td className="pr-2 text-small text-muted">{id?.title ?? "Recruit"}</td>
+                  <td className="pr-2"><TitleChip level={id?.level ?? 1} title={id?.title ?? "Recruit"} /></td>
                   <td className="pr-2 text-right tabular">{s ? formatPct(s.roiPct) : "0.0%"}</td>
-                  <td className="text-right tabular font-scoreboard text-[16px]">{s ? s.contribution.toFixed(1) : "0.0"}</td>
+                  <td className="text-right">
+                    <span className="tabular font-scoreboard text-[16px]">{s ? s.contribution.toFixed(1) : "0.0"}</span>
+                    <Bar value={(s?.contribution ?? 0) / maxContribution} tone={(s?.contribution ?? 0) < 0 ? "loss" : "accent"} className="mt-1 ml-auto max-w-[96px]" />
+                  </td>
                 </tr>
               );
             })}

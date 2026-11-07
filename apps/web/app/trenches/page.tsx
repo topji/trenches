@@ -6,6 +6,8 @@ import { ladder } from "@trenches/services";
 import { copy } from "@/lib/copy";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Podium } from "@/components/clans/podium";
+import { Bar, Medal, TagBadge } from "@/components/ui/medal";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: copy.clans.h1 };
@@ -23,6 +25,7 @@ export default async function ClansPage({ searchParams }: { searchParams: Promis
     return seasonOf(d);
   })();
   const c = copy.clans.columns;
+  const maxScore = Math.max(1, ...rows.map((r) => Math.abs(r.score)));
   return (
     <div className="flex flex-col gap-6 lg:gap-8">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -42,6 +45,8 @@ export default async function ClansPage({ searchParams }: { searchParams: Promis
       {rows.length === 0 ? (
         <EmptyState action={<ButtonLink href="/create-trench" size="sm">{copy.clans.create}</ButtonLink>}>{copy.clans.empty}</EmptyState>
       ) : (
+        <>
+        <Podium rows={rows.slice(0, 3).map((r) => ({ rank: r.rank, tag: r.tag, name: r.name, score: r.score, members: r.members }))} />
         <table className="w-full border-t border-line">
           <thead>
             <tr className="text-small text-muted text-left">
@@ -55,19 +60,21 @@ export default async function ClansPage({ searchParams }: { searchParams: Promis
           <tbody>
             {rows.map((r, i) => (
               <tr key={r.clanId} className="h-14 border-t border-line row-in row-hover" style={{ animationDelay: `${Math.min(i, 10) * 120}ms` }}>
-                <td className={clsx("pr-2 font-scoreboard text-figure", rankTone[r.rank - 1] ?? "text-text")}>{r.rank}</td>
+                <td className="pr-2"><Medal rank={r.rank} /></td>
                 <td className="pr-2">
-                  <Link href={`/trench/${r.tag}`} className="font-semibold">
-                    <span className="font-mono text-[13px] text-muted">[{r.tag}]</span> {r.name}
+                  <Link href={`/trench/${r.tag}`} className="font-semibold inline-flex items-center gap-2 flex-wrap">
+                    <TagBadge tag={r.tag} /> {r.name}
                   </Link>
+                  <Bar value={r.score / maxScore} className="mt-2 max-w-[220px]" tone={r.score < 0 ? "loss" : "accent"} />
                 </td>
                 <td className="pr-2 text-right tabular text-muted">{r.members}</td>
-                <td className="pr-2 text-right font-scoreboard text-figure tabular">{r.score.toFixed(1)}</td>
+                <td className={clsx("pr-2 text-right font-scoreboard text-figure tabular", r.rank === 1 && "text-accent")}>{r.score.toFixed(1)}</td>
                 <td className="text-right tabular text-muted hidden sm:table-cell">{r.podiums}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        </>
       )}
     </div>
   );

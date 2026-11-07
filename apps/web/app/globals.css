@@ -28,6 +28,9 @@
   }
   body {
     @apply bg-bg text-text font-sans text-[16px] leading-[1.5] antialiased;
+    /* field texture: a faint dot grid, no colour wash */
+    background-image: radial-gradient(color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px;
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
@@ -121,6 +124,46 @@
     background: color-mix(in srgb, var(--bg) 82%, transparent);
     backdrop-filter: saturate(140%) blur(10px);
     -webkit-backdrop-filter: saturate(140%) blur(10px);
+  }
+  /* Gamification primitives */
+  .medal {
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-pill font-scoreboard text-[18px] border;
+    background: color-mix(in srgb, var(--bg-sunken) 80%, transparent);
+    border-color: var(--line);
+  }
+  .medal-1 { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  .medal-2 { color: var(--bg); background: var(--rank-2); border-color: var(--rank-2); }
+  .medal-3 { color: var(--bg); background: var(--rank-3); border-color: var(--rank-3); }
+  .bar {
+    @apply h-1.5 w-full rounded-pill overflow-hidden;
+    background: color-mix(in srgb, var(--line) 70%, transparent);
+  }
+  .bar > span {
+    @apply block h-full rounded-pill;
+    background: var(--accent);
+  }
+  .bar-gain > span { background: var(--gain); }
+  .bar-loss > span { background: var(--loss); }
+  .tier-1 { color: var(--text-muted); }
+  .tier-2 { color: var(--text); }
+  .tier-3 { color: var(--rank-2); }
+  .tier-4 { color: var(--rank-3); }
+  .tier-5 { color: var(--accent); }
+  .tag-badge {
+    @apply inline-flex items-center h-6 px-2 rounded font-mono text-[12px] tracking-[0.04em];
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+  }
+  .podium {
+    @apply grid grid-cols-3 gap-2 items-end;
+  }
+  .podium-step {
+    @apply panel flex flex-col items-center gap-2 px-3 pt-4 pb-5 text-center;
+  }
+  .podium-step-1 { @apply pt-6 pb-7; border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+  .ticker {
+    letter-spacing: 0.02em;
+    font-feature-settings: "tnum" 1;
   }
   .hairline-top {
     box-shadow: inset 0 1px 0 0 color-mix(in srgb, var(--text) 6%, transparent);
