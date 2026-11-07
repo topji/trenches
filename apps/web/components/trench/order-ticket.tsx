@@ -25,7 +25,7 @@ interface Quote {
   bracket: { orderTypedData: string | null; permitTypedData: string | null; approveTx: { to: string; data: string } | null } | null;
 }
 
-const ACTIVE_TYPES: OrderType[] = ["market", "dca", "bracket"];
+const ACTIVE_TYPES: OrderType[] = ["market", "dca", "bracket", "limit", "twap"];
 const ALL_TYPES: OrderType[] = ["market", "dca", "bracket", "limit", "twap"];
 const BASE_CHAIN_ID = 8453;
 
@@ -47,6 +47,9 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
   const [interval, setInterval_] = useState("60");
   const [stopLoss, setStopLoss] = useState("");
   const [takeProfit, setTakeProfit] = useState("");
+  const [limitPrice, setLimitPrice] = useState("");
+  const [duration, setDuration] = useState("600");
+  const [buckets, setBuckets] = useState("5");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +65,8 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
   function params(): Record<string, unknown> {
     if (type === "dca") return { legs: Number(legs), intervalSeconds: Number(interval) };
     if (type === "bracket") return { stopLossPrice: stopLoss, takeProfitPrice: takeProfit };
+    if (type === "limit") return { limitNotionalPrice: limitPrice };
+    if (type === "twap") return { durationSeconds: Number(duration), buckets: Number(buckets) };
     return {};
   }
 
@@ -97,12 +102,13 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
     };
   }, [session.address, assets, balanceKey]);
 
-  // Bracket defaults (DECISIONS.md): stop −3 %, take profit +3 % of the current quote price.
+  // Bracket defaults (DECISIONS.md): stop −3 %, take profit +3 % of the current quote price. Limit: the quote price.
   useEffect(() => {
     if (type === "bracket" && quote && (!stopLoss || !takeProfit)) {
       if (!stopLoss) setStopLoss((quote.priceUsd * 0.97).toFixed(2));
       if (!takeProfit) setTakeProfit((quote.priceUsd * 1.03).toFixed(2));
     }
+    if (type === "limit" && quote && !limitPrice) setLimitPrice(quote.priceUsd.toFixed(2));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, quote?.priceUsd]);
 
@@ -112,7 +118,7 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
       setQuote(null);
       return;
     }
-    if (type === "bracket" && (!(Number(stopLoss) > 0) || !(Number(takeProfit) > 0))) {
+    if ((type === "bracket" && (!(Number(stopLoss) > 0) || !(Number(takeProfit) > 0))) || (type === "limit" && !(Number(limitPrice) > 0))) {
       // No prices yet: quote as a plain market buy to learn the price, then fill the defaults.
       if (debounce.current) clearTimeout(debounce.current);
       debounce.current = setTimeout(() => {
@@ -137,7 +143,7 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
       if (debounce.current) clearTimeout(debounce.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, asset, side, amount, legs, interval, stopLoss, takeProfit, session.authenticated]);
+  }, [type, asset, side, amount, legs, interval, stopLoss, takeProfit, limitPrice, duration, buckets, session.authenticated]);
 
   async function waitForReceipt(provider: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> }, hash: string): Promise<void> {
     for (let i = 0; i < 60; i++) {
@@ -294,6 +300,24 @@ export function OrderTicket({ trenchId, assets, onPlaced }: { trenchId: string; 
             <input id="takeProfit" type="number" inputMode="decimal" min="0" step="any" className={clsx(inputClass, "tabular")} value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} />
           </Field>
           <p className="col-span-2 text-small text-faint">{copy.order.bracketHelper}</p>
+        </div>
+      )}
+
+      {type === "limit" && (
+        <Field label={f.limitPrice} htmlFor="limitPrice" helper={copy.order.limitHelper}>
+          <input id="limitPrice" type="number" inputMode="decimal" min="0" step="any" className={clsx(inputClass, "tabular")} value={limitPrice} onChange={(e) => setLimitPrice(e.target.value)} />
+        </Field>
+      )}
+
+      {type === "twap" && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={f.duration} htmlFor="duration">
+            <input id="duration" type="number" inputMode="numeric" min="300" step="60" className={clsx(inputClass, "tabular")} value={duration} onChange={(e) => setDuration(e.target.value)} />
+          </Field>
+          <Field label={f.buckets} htmlFor="buckets">
+            <input id="buckets" type="number" inputMode="numeric" min="2" max="60" className={clsx(inputClass, "tabular")} value={buckets} onChange={(e) => setBuckets(e.target.value)} />
+          </Field>
+          <p className="col-span-2 text-small text-faint">{copy.order.twapHelper}</p>
         </div>
       )}
 

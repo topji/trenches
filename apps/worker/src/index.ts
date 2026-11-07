@@ -1,7 +1,7 @@
 import "dotenv/config";
 import cron from "node-cron";
 import pino from "pino";
-import { activateTrenches, pollOrders, recomputeLeaderboards, settleTrenches } from "@trenches/services";
+import { activateTrenches, pollOrders, recomputeLeaderboards, refreshProfiles, settleTrenches } from "@trenches/services";
 
 /**
  * Worker process: pollers, scoring, settlement.
@@ -10,7 +10,7 @@ import { activateTrenches, pollOrders, recomputeLeaderboards, settleTrenches } f
  *   step 5  pollOrders         (every 15 s)        ✓
  *   step 6  recomputeLeaderboards (every 30 s)   ✓
  *   step 7  settleTrenches     (every 60 s)        ✓
- *   step 8  refreshProfiles    (every 5 min)
+ *   step 8  refreshProfiles    (every 5 min)      ✓
  */
 const log = pino({ level: process.env.LOG_LEVEL ?? "info" });
 
@@ -41,6 +41,15 @@ const jobs: { name: string; schedule: string; run: () => Promise<unknown> }[] = 
       const r = await settleTrenches();
       for (const s of r) log.info({ trenchId: s.trenchId, slug: s.slug, winners: s.winners, payoutTxId: s.payoutTxId, feeShare: s.feeShare, arkivPayoutsTx: s.arkivPayoutsTx }, "settled");
       return r.length;
+    },
+  },
+  {
+    name: "refreshProfiles",
+    schedule: "40 */5 * * * *",
+    run: async () => {
+      const r = await refreshProfiles();
+      if (r.updated) log.info(r, "profiles refreshed");
+      return r;
     },
   },
   {

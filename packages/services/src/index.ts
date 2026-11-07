@@ -6,3 +6,6 @@ export * from "./join.js";
 export * from "./orders.js";
 export * from "./leaderboard.js";
 export * from "./settlement.js";
+export * from "./sponsor.js";
+export * from "./dashboard.js";
+export * from "./profiles.js";

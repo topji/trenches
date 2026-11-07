@@ -20,12 +20,28 @@ const CHIPS: { key: string; label: string; statuses: TrenchStatus[] }[] = [
   { key: "ended", label: copy.discovery.chips.ended, statuses: ["ended", "settled"] },
 ];
 
-/** Discovery: rows, not cards. Reads `trenches.trench` from Arkiv (TECH_SPEC §3.3 query 1), sorted by pool. */
+function href(status: string, asset: string | null) {
+  const q = new URLSearchParams();
+  if (status !== "all") q.set("status", status);
+  if (asset) q.set("asset", asset);
+  const s = q.toString();
+  return s ? `/trenches?${s}` : "/trenches";
+}
+
+/**
+ * F8 discovery: rows, not cards. `trenches.trench` where status in (…) [and asset = X] from Arkiv
+ * (TECH_SPEC §3.3 query 1), sorted by pool. Entrant counts come from `trenches.entry`.
+ */
 export default async function TrenchesPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const q = await searchParams;
   const chip = CHIPS.find((c) => c.key === q.status) ?? CHIPS[0]!;
-  const rows = await arkivReader().listTrenches({ statuses: chip.statuses });
+  const asset = q.asset?.toUpperCase() || null;
+  const reader = arkivReader();
+  const rows = await reader.listTrenches({ statuses: chip.statuses, ...(asset ? { asset } : {}) });
   rows.sort((a, b) => b.prizePoolUsdc - a.prizePoolUsdc);
+  const entrantCounts = await Promise.all(rows.slice(0, 40).map((t) => reader.listEntries(t.id).then((e) => e.length).catch(() => 0)));
+  const assetChips = [...new Set(rows.flatMap((t) => t.allowedAssets.map((a) => a.symbol.toUpperCase())))].sort();
+  if (asset && !assetChips.includes(asset)) assetChips.push(asset);
   const now = Date.now();
 
   return (
@@ -38,11 +54,22 @@ export default async function TrenchesPage({ searchParams }: { searchParams: Pro
         {CHIPS.map((c) => (
           <Link
             key={c.key}
-            href={c.key === "all" ? "/trenches" : `/trenches?status=${c.key}`}
+            href={href(c.key, asset)}
             aria-current={c.key === chip.key ? "page" : undefined}
             className={clsx("h-10 px-3 inline-flex items-center rounded-pill border text-small whitespace-nowrap hover:no-underline", c.key === chip.key ? "border-accent text-text" : "border-line text-muted")}
           >
             {c.label}
+          </Link>
+        ))}
+        {assetChips.length > 0 && <span className="w-px bg-line mx-1 self-stretch" aria-hidden />}
+        {assetChips.map((sym) => (
+          <Link
+            key={sym}
+            href={href(chip.key, asset === sym ? null : sym)}
+            aria-pressed={asset === sym}
+            className={clsx("h-10 px-3 inline-flex items-center rounded-pill border text-small whitespace-nowrap hover:no-underline", asset === sym ? "border-accent text-text" : "border-line text-muted")}
+          >
+            {sym}
           </Link>
         ))}
       </nav>
@@ -50,17 +77,20 @@ export default async function TrenchesPage({ searchParams }: { searchParams: Pro
         <EmptyState action={<ButtonLink href="/create" size="sm">{copy.cta.create}</ButtonLink>}>{copy.discovery.empty}</EmptyState>
       ) : (
         <ol className="border-t border-line">
-          {rows.map((t) => {
+          {rows.map((t, i) => {
             const start = Date.parse(t.startAt);
             const end = Date.parse(t.endAt);
             const timing = now < start ? copy.discovery.startsIn(formatShortDuration(start - now)) : now < end ? copy.discovery.left(formatShortDuration(end - now)) : copy.trench.countdown.ended;
             return (
               <li key={t.id} className="border-b border-line">
                 <Link href={`/t/${t.slug}`} className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 py-4 hover:no-underline">
-                  <span className="font-semibold">{t.name}</span>
+                  <span className="font-semibold">
+                    {t.name}
+                    {t.sponsor && <span className="text-small text-muted font-normal"> · {copy.trench.sponsor(t.sponsor.name)}</span>}
+                  </span>
                   <StatusPill status={pillFor(t, new Date(now))} className="row-start-1 col-start-2" />
-                  <span className="text-small text-muted col-span-2">
-                    {t.allowedAssets.map((a) => a.symbol).join(", ")} · {copy.discovery.pool(formatUsd(t.prizePoolUsdc))} · {timing}
+                  <span className="text-small text-muted col-span-2 tabular">
+                    {t.allowedAssets.map((a) => a.symbol).join(", ")} · {copy.discovery.pool(formatUsd(t.prizePoolUsdc).replace("$", ""))} · {copy.discovery.entrants(entrantCounts[i] ?? 0)} · {timing}
                   </span>
                 </Link>
               </li>

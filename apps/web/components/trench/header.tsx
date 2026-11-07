@@ -34,6 +34,15 @@ export function TrenchHeader({ trench, entrants, paidAt }: { trench: Trench; ent
           {trench.allowedAssets.map((a) => a.symbol).join(", ")} · {trench.prizeSplit.join("/")} · {copy.discovery.entrants(entrants)}
         </p>
         {trench.description && <p className="mt-4 max-w-[60ch]">{trench.description}</p>}
+        <p className="mt-3 text-small">
+          <Link href={`/t/${trench.slug}/share`}>{copy.cta.share}</Link>
+          {(trench.status === "draft" || trench.status === "funded") && (
+            <>
+              {" · "}
+              <Link href={`/sponsor/${trench.slug}`}>Sponsor this Trench</Link>
+            </>
+          )}
+        </p>
       </div>
     </header>
   );

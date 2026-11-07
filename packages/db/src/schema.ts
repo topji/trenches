@@ -35,6 +35,8 @@ export const trenches = pgTable(
     arkivTxHash: text("arkiv_tx_hash"),
     settlementStartedAt: ts("settlement_started_at"), // claim flag so only one worker settles a Trench
     paidAt: ts("paid_at"),
+    /** F9.2: a sponsor's proposed asset, pending the host's decision; the original assets stand until accepted. */
+    pendingAsset: jsonb("pending_asset").$type<{ chainId: number; address: `0x${string}`; symbol: string; sponsor: `0x${string}`; proposedAt: string }>(),
     createdAt: ts("created_at").notNull(),
     updatedAt: ts("updated_at").notNull(),
   },

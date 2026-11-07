@@ -1,0 +1,1 @@
+ALTER TABLE "trenches" ADD COLUMN "pending_asset" jsonb;
