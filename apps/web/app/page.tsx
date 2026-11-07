@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { clsx } from "clsx";
 import { seasonLabel, seasonOf } from "@trenches/core";
-import { ladder } from "@trenches/services";
+import { arkivReader, ladder } from "@trenches/services";
+import { formatShortDuration, formatUsd } from "@/lib/format";
+import { pillFor } from "@/lib/trench-view";
+import { StatusPill } from "@/components/ui/status-pill";
 import { copy } from "@/lib/copy";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -12,7 +15,11 @@ const rankTone = ["text-accent", "text-rank-2", "text-rank-3"];
 
 export default async function LandingPage() {
   const season = seasonOf();
-  const top = (await ladder(season).catch(() => [])).slice(0, 3);
+  const [top, liveBattles] = await Promise.all([
+    ladder(season).then((r) => r.slice(0, 3)).catch(() => []),
+    arkivReader().listTrenches({ statuses: ["live", "funded"], limit: 20 }).then((r) => r.sort((a, b) => b.prizePoolUsdc - a.prizePoolUsdc).slice(0, 3)).catch(() => []),
+  ]);
+  const now = Date.now();
   return (
     <div className="flex flex-col gap-8 lg:gap-12">
       <section className="max-w-[640px]">
@@ -46,9 +53,26 @@ export default async function LandingPage() {
 
       <section aria-labelledby="live-heading">
         <h2 id="live-heading" className="text-h2 mb-4">{copy.landing.liveHeading}</h2>
-        <EmptyState action={<ButtonLink href="/create" size="sm">{copy.cta.create}</ButtonLink>}>
-          {copy.landing.liveEmpty}
-        </EmptyState>
+        {liveBattles.length === 0 ? (
+          <EmptyState action={<ButtonLink href="/create" size="sm">{copy.cta.create}</ButtonLink>}>{copy.landing.liveEmpty}</EmptyState>
+        ) : (
+          <ol className="border-t border-line">
+            {liveBattles.map((t) => {
+              const start = Date.parse(t.startAt);
+              const end = Date.parse(t.endAt);
+              const timing = now < start ? copy.discovery.startsIn(formatShortDuration(start - now)) : copy.discovery.left(formatShortDuration(end - now));
+              return (
+                <li key={t.id} className="border-b border-line">
+                  <Link href={`/t/${t.slug}`} className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 py-4 hover:no-underline">
+                    <span className="font-semibold">{t.name}</span>
+                    <StatusPill status={pillFor(t, new Date(now))} className="row-start-1 col-start-2" />
+                    <span className="text-small text-muted col-span-2 tabular">{t.allowedAssets.map((a) => a.symbol).join(", ")} · {copy.discovery.pool(formatUsd(t.prizePoolUsdc).replace("$", ""))} · {timing}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </section>
 
       <section aria-labelledby="how-heading">
