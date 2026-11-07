@@ -86,7 +86,7 @@ test("leader creates a clan battle; a non-member cannot join; members can", asyn
   battleSlug = body.trench.slug;
 
   // an outsider (even verified) cannot create a battle for this clan
-  const forbidden = await request.post("/api/trenches", { headers: demoHeaders(OUTSIDER), data: { name: "x", startAt: new Date(now + 60_000).toISOString(), endAt: new Date(now + 30 * 60_000).toISOString(), allowedAssets: [{ chainId: 8453, address: "0x4200000000000000000000000000000000000006", symbol: "WETH" }], prizePoolUsdc: 1, prizeSplit: [100], entryRule: "open", adminFeeShareBps: 5000, clanId } });
+  const forbidden = await request.post("/api/trenches", { headers: demoHeaders(OUTSIDER), data: { name: "Outsider battle", startAt: new Date(now + 60_000).toISOString(), endAt: new Date(now + 30 * 60_000).toISOString(), allowedAssets: [{ chainId: 8453, address: "0x4200000000000000000000000000000000000006", symbol: "WETH" }], prizePoolUsdc: 1, prizeSplit: [100], entryRule: "open", adminFeeShareBps: 5000, clanId } });
   expect(forbidden.status()).toBe(403);
 
   const fund = await request.post(`/api/trenches/${battleId}/fund`, { headers: demoHeaders(LEADER), data: {} });

@@ -1,5 +1,32 @@
 # PROGRESS.md — newest first
 
+## Sat 7 Nov 2026, 07:05 IST — Steps 8 and 11–14: nine features present, clans + identity layer, paperwork
+
+**Step 8 (F6–F9)**
+- `/dashboard` with entrants / volume / fees earned / HCS + escrow links and a Share sheet (X composer with top 3); `/u/[address]` from Arkiv `profile` + `lb`; `/trenches` with status + asset chips, entrants and countdowns; `/sponsor/[slug]` funding the pool with an asset proposal the host accepts or keeps; Limit + TWAP in the ticket; `/t/[slug]/opengraph-image` share card + `/t/[slug]/share`; worker `refreshProfiles`.
+- `e2e/f6-f9-rest.spec.ts`: F8 green; F9 funded 2 USDC → pool 3.00, sponsor name on the page, OG image 200; the host-accept check needed its locator scoped to the row (two pending proposals from two runs) — rerun in progress with the clan spec.
+- The dev server kept restarting on its memory threshold mid-suite; e2e now runs against `next build && next start`. Satori needs explicit `display: flex` on every element and single text nodes in the OG card.
+
+**Steps 11–13 (clans + identity, `FEATURE_CLANS`)**
+- Tables `profiles`, `clans`, `clan_members`, `clan_scores`, `trenches.clan_id`; Arkiv `trenches.clan`, `trenches.clan_member`, `trenches.clan_score` + identity fields on `trenches.profile`.
+- `packages/core/src/clans.ts`: XP (+1 per $100 volume, +100/60/40 podiums, +25 clan), levels Recruit→Warlord, clan season score Σ clamp(ROI, ±50) + 20 × podiums, ladder tie-break by member count; 5 unit tests.
+- Routes: `POST /api/clans`, `/api/clans/[id]/join|leave`, `/api/profile/handle` (one per nullifier, set once), `GET /api/clans/ladder`, `GET /api/me/clan`. Clan battle = Trench with `clanId`: only the leader creates it, only members can join.
+- Worker `recomputeClanScores` every 60 s (and after settlement); XP recomputed after fills and payouts. Member season ROI ≈ Σ P&L / (Σ volume / 2).
+- Pages `/clans`, `/c/[tag]`, `/create-clan`; landing hero = top 3 clans; `[TAG] handle · title` on leaderboard rows; clan badge on battle headers; battle-kind toggle for leaders on `/create`; identity card with level bar and handle claim on profiles.
+- `e2e/f10-clans.spec.ts`: create clan + handle (duplicate → "Handle taken."), second trader joins (again → "You're already in [TAG]."), ladder lists the clan — green. Clan battle creation by the leader, outsider blocked, members join, fast-forward, ladder podiums: rerun in progress after a test-data fix.
+
+**Step 14**
+- `pnpm verify` (typecheck → unit → e2e → Solidity grep → judging table status), `pnpm demo` (`scripts/e2e-demo.ts`: create, fund, join two, clan flow, fast-forward, links), `Dockerfile.worker` + `railway.json`, `docs/deploy.md`, `docs/submission.md` (showcase text, shot list, posts), README (judges' map, architecture, clans, World trust moment, runnable Arkiv query, Hedera ids, AI usage, what's next), `arkiv/{schema,how-you-use-arkiv,why-arkiv,friction,reach}.md`.
+- **Deploy is blocked on accounts**: needs a Vercel project (root `apps/web`) and a Railway/Fly service for the worker with the env copied in. Steps in `docs/deploy.md`.
+
+**Decisions made**
+- Every ranked entrant is eligible for a payout place, fills or not.
+- Winner Hedera accounts are created by the platform when the env map is empty (encrypted keys), stated in the README.
+- Clan membership requires a World-verified wallet (a `world_verifications` row); handles are bound to the nullifier.
+- Commit messages carry no AI attribution line (builder's request).
+
+**Next:** deploy once the accounts exist; `pnpm demo` on the live URL; record.
+
 ## Sat 7 Nov 2026, 06:40 IST — Step 7 done: settlement and payout on Hedera (F5), Bracket orders
 
 **Works (live, testnet + Base)**
