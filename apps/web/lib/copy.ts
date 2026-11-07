@@ -4,8 +4,8 @@ export const copy = {
     name: "Trenches",
     site: "jointrenches.xyz",
     handle: "@jointrenches",
-    tagline: "Trade with your crew. Climb together.",
-    positioning: "The social layer for on-chain traders",
+    tagline: "The collaborative social layer for on-chain traders.",
+    positioning: "Trade with your crew. Climb together.",
     sub: "Trenches turns solo trading into a team sport. Found a Trench with people you trust, enter seasons from your own wallet, and rise up a public ladder nobody can fake: one human per slot, every fill scored on-chain, prizes that pay out on their own.",
     footer:
       "Built at ETHGlobal Mumbai · Open source · Execution by Definitive Flash · Records on Arkiv · Escrow on Hedera · Humans by World ID",

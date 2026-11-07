@@ -1,4 +1,5 @@
 import "dotenv/config";
+import http from "node:http";
 import cron from "node-cron";
 import pino from "pino";
 import { activateTrenches, pollOrders, recomputeClanScores, recomputeLeaderboards, refreshProfiles, settleTrenches } from "@trenches/services";
@@ -73,6 +74,8 @@ const jobs: { name: string; schedule: string; run: () => Promise<unknown> }[] = 
 ];
 
 const running = new Set<string>();
+const lastRun = new Map<string, { at: string; ms: number; ok: boolean; error?: string }>();
+const startedAt = new Date().toISOString();
 for (const job of jobs) {
   cron.schedule(job.schedule, async () => {
     if (running.has(job.name)) return; // never overlap a slow run with the next tick
@@ -81,8 +84,10 @@ for (const job of jobs) {
     try {
       const result = await job.run();
       log.debug({ job: job.name, ms: Date.now() - started, result }, "job ok");
+      lastRun.set(job.name, { at: new Date().toISOString(), ms: Date.now() - started, ok: true });
     } catch (err) {
       log.error({ job: job.name, err: (err as Error).message }, "job failed");
+      lastRun.set(job.name, { at: new Date().toISOString(), ms: Date.now() - started, ok: false, error: (err as Error).message });
     } finally {
       running.delete(job.name);
     }
@@ -90,3 +95,19 @@ for (const job of jobs) {
 }
 
 log.info({ jobs: jobs.map((j) => j.name) }, "worker started");
+
+/** Health endpoint (worker.jointrenches.xyz): which jobs run, when they last ran, and whether they succeeded. */
+const port = Number(process.env.PORT ?? 8080);
+http
+  .createServer((req, res) => {
+    const body = {
+      ok: true,
+      service: "trenches-worker",
+      startedAt,
+      uptimeSeconds: Math.round(process.uptime()),
+      jobs: jobs.map((j) => ({ name: j.name, schedule: j.schedule, running: running.has(j.name), last: lastRun.get(j.name) ?? null })),
+    };
+    res.writeHead(req.url === "/" || req.url === "/health" ? 200 : 404, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify(body, null, 2));
+  })
+  .listen(port, () => log.info({ port }, "health endpoint listening"));

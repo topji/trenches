@@ -23,7 +23,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: { default: copy.app.name, template: `%s · ${copy.app.name}` },
-  description: `${copy.app.positioning}. ${copy.app.sub}`,
+  description: copy.app.sub,
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
 };
 

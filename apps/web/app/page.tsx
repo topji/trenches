@@ -58,9 +58,9 @@ export default async function LandingPage() {
         <div className="flex flex-col gap-6">
           <p className="eyebrow inline-flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-pill bg-accent live-dot" aria-hidden />
-            {copy.app.positioning} · {seasonLabel(season)}
+            Trenches · {seasonLabel(season)}
           </p>
-          <h1 className="text-display max-w-[14ch]">{copy.app.tagline}</h1>
+          <h1 className="text-display max-w-[16ch]">{copy.app.tagline}</h1>
           <p className="text-muted text-[17px] max-w-[52ch]">{copy.app.sub}</p>
           <div className="flex flex-wrap gap-3">
             <ButtonLink href="/create-trench">{copy.landing.ctaFound}</ButtonLink>
