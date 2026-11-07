@@ -68,6 +68,14 @@ export async function createTrench(raw: unknown, adminAddress: Address): Promise
   const slug = slugify(input.name);
   const createdAt = new Date().toISOString();
 
+  // Clan battle: only the clan's leader can create one (steps 11–13).
+  const clanId = typeof (raw as { clanId?: unknown })?.clanId === "string" && (raw as { clanId: string }).clanId ? (raw as { clanId: string }).clanId : undefined;
+  if (clanId) {
+    const { clanOf } = await import("./clans.js");
+    const mine = await clanOf(adminAddress);
+    if (!mine || mine.id !== clanId || !mine.isLeader) throw forbidden("Only the clan leader can create a clan battle.");
+  }
+
   // 1. Hedera: escrow account + topic (money and audit log exist before anything is public)
   const escrow = await createEscrowAccount(hedera, `trenches escrow ${slug}`);
   const topic = await createTopic(hedera, `trenches ${slug}`);
@@ -88,6 +96,7 @@ export async function createTrench(raw: unknown, adminAddress: Address): Promise
     adminFeeShareBps: input.adminFeeShareBps,
     status: "draft",
     hedera: { escrowAccountId: escrow.accountId, topicId: topic.topicId },
+    ...(clanId ? { clanId } : {}),
     createdAt,
   };
 

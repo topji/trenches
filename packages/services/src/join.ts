@@ -29,6 +29,10 @@ export async function joinTrench(trenchId: string, trader: Address, idkitResult:
   const trench = rowToTrench(row);
   const gate = canJoin(trench);
   if (!gate.ok) throw new ServiceError(409, gate.reason);
+  if (trench.clanId) {
+    const { isClanMember } = await import("./clans.js");
+    if (!(await isClanMember(trader, trench.clanId))) throw new ServiceError(403, "This is a clan battle. Join the clan first.");
+  }
 
   const already = await db.select({ trader: entries.trader }).from(entries).where(and(eq(entries.trenchId, trenchId), eq(entries.trader, trader.toLowerCase()))).limit(1);
   if (already.length) throw conflict("You've already entered this Trench.");

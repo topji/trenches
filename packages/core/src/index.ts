@@ -6,3 +6,4 @@ export * from "./fees.js";
 export * from "./ids.js";
 export * from "./status.js";
 export * from "./validation.js";
+export * from "./clans.js";

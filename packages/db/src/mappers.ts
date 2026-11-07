@@ -25,6 +25,7 @@ export function rowToTrench(r: TrenchRow): Trench {
       ...(r.scheduleId ? { scheduleId: r.scheduleId } : {}),
     },
     ...(r.sponsor ? { sponsor: r.sponsor } : {}),
+    ...(r.clanId ? { clanId: r.clanId } : {}),
     createdAt: new Date(r.createdAt).toISOString(),
   };
 }
@@ -56,6 +57,7 @@ export function trenchToRow(t: Trench, extra: { arkivEntityKey?: string | null; 
     payoutTxId: t.hedera.payoutTxId ?? null,
     scheduleId: t.hedera.scheduleId ?? null,
     sponsor: t.sponsor ?? null,
+    clanId: t.clanId ?? null,
     arkivEntityKey: extra.arkivEntityKey ?? null,
     arkivTxHash: extra.arkivTxHash ?? null,
     createdAt: t.createdAt,

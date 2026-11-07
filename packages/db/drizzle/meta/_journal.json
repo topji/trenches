@@ -36,6 +36,13 @@
       "when": 1794010074106,
       "tag": "0004_heavy_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794011951151,
+      "tag": "0005_stiff_ogun",
+      "breakpoints": true
     }
   ]
 }

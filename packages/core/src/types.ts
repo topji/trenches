@@ -40,6 +40,8 @@ export interface Trench {
   status: TrenchStatus;
   hedera: TrenchHedera;
   sponsor?: TrenchSponsor;
+  /** Set → clan battle (members only); unset → world battle. */
+  clanId?: string;
   createdAt: string;
 }
 
@@ -111,6 +113,40 @@ export interface Profile {
   bestFinish?: number;
   totalVolumeUsd: number;
   totalPnlUsd: number;
+  /** Identity layer (clans). */
+  handle?: string;
+  clanId?: string;
+  xp?: number;
+  level?: number;
+  title?: string;
+}
+
+export interface Clan {
+  id: string;
+  name: string;
+  tag: string; // 3–5 chars, unique, upper-case
+  description: string;
+  leader: Address;
+  open: boolean;
+  inviteCode?: string;
+  memberCount: number;
+  createdAt: string;
+}
+
+export interface ClanMember {
+  clanId: string;
+  trader: Address;
+  joinedAt: string;
+}
+
+export interface ClanScore {
+  clanId: string;
+  season: string; // YYYY-MM
+  score: number;
+  rank: number;
+  podiums: number;
+  members: number;
+  computedAt: string;
 }
 
 export interface Sponsorship {

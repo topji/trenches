@@ -3,7 +3,7 @@
  * exist for joins, fill ingestion, job state and the secrets Arkiv must never hold (escrow keys,
  * nullifier hashes, fee ledger). Money is numeric(18,6) as strings (DECISIONS.md).
  */
-import { index, integer, jsonb, numeric, pgTable, primaryKey, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, numeric, pgTable, primaryKey, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 const money = (name: string) => numeric(name, { precision: 18, scale: 6 });
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "string" });
@@ -35,6 +35,8 @@ export const trenches = pgTable(
     arkivTxHash: text("arkiv_tx_hash"),
     settlementStartedAt: ts("settlement_started_at"), // claim flag so only one worker settles a Trench
     paidAt: ts("paid_at"),
+    /** Clans: set → clan battle (members only, leader-created); unset → world battle. */
+    clanId: text("clan_id"),
     /** F9.2: a sponsor's proposed asset, pending the host's decision; the original assets stand until accepted. */
     pendingAsset: jsonb("pending_asset").$type<{ chainId: number; address: `0x${string}`; symbol: string; sponsor: `0x${string}`; proposedAt: string }>(),
     createdAt: ts("created_at").notNull(),
@@ -230,3 +232,59 @@ export type TrenchRow = typeof trenches.$inferSelect;
 export type NewTrenchRow = typeof trenches.$inferInsert;
 export type OrderRow = typeof orders.$inferSelect;
 export type FillRow = typeof fills.$inferSelect;
+
+/* ---------- Clans + identity (steps 11–13) ---------- */
+
+export const profiles = pgTable(
+  "profiles",
+  {
+    trader: text("trader").primaryKey(),
+    handle: text("handle"),
+    nullifierHash: text("nullifier_hash"), // one handle per human
+    clanId: text("clan_id"),
+    xp: integer("xp").notNull().default(0),
+    level: integer("level").notNull().default(1),
+    title: text("title").notNull().default("Recruit"),
+    updatedAt: ts("updated_at").notNull(),
+  },
+  (t) => ({ handleIdx: uniqueIndex("profiles_handle_idx").on(t.handle), nullifierIdx: uniqueIndex("profiles_nullifier_idx").on(t.nullifierHash) }),
+);
+
+export const clans = pgTable(
+  "clans",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    tag: text("tag").notNull(),
+    description: text("description").notNull().default(""),
+    leader: text("leader").notNull(),
+    open: boolean("open").notNull().default(true),
+    inviteCode: text("invite_code"),
+    memberCount: integer("member_count").notNull().default(1),
+    arkivEntityKey: text("arkiv_entity_key"),
+    createdAt: ts("created_at").notNull(),
+  },
+  (t) => ({ tagIdx: uniqueIndex("clans_tag_idx").on(t.tag) }),
+);
+
+export const clanMembers = pgTable("clan_members", {
+  trader: text("trader").primaryKey(), // one clan per trader
+  clanId: text("clan_id").notNull().references(() => clans.id),
+  joinedAt: ts("joined_at").notNull(),
+  arkivEntityKey: text("arkiv_entity_key"),
+});
+
+export const clanScores = pgTable(
+  "clan_scores",
+  {
+    clanId: text("clan_id").notNull().references(() => clans.id),
+    season: text("season").notNull(), // YYYY-MM
+    score: money("score").notNull(),
+    rank: integer("rank").notNull(),
+    podiums: integer("podiums").notNull().default(0),
+    members: integer("members").notNull().default(0),
+    computedAt: ts("computed_at").notNull(),
+    arkivEntityKey: text("arkiv_entity_key"),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.clanId, t.season] }) }),
+);

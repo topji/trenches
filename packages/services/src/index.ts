@@ -9,3 +9,4 @@ export * from "./settlement.js";
 export * from "./sponsor.js";
 export * from "./dashboard.js";
 export * from "./profiles.js";
+export * from "./clans.js";

@@ -58,6 +58,38 @@ export const ProfileSchema = defineSchema("trenches.profile", {
   bestFinish: i32().optional(),
   totalVolumeUsd: dec(),
   totalPnlUsd: dec(),
+  // identity layer (clans)
+  handle: str().indexed().optional(),
+  clanId: str().indexed().optional(),
+  xp: i32().optional(),
+  level: i32().optional(),
+  title: str().optional(),
+});
+
+export const ClanSchema = defineSchema("trenches.clan", {
+  clanId: str().indexed(),
+  tag: str().indexed(),
+  leader: addr().indexed(),
+  name: str(),
+  open: bool(),
+  memberCount: i32(),
+  createdAt: u64(),
+});
+
+export const ClanMemberSchema = defineSchema("trenches.clan_member", {
+  clanId: str().indexed(),
+  trader: addr().indexed(),
+  joinedAt: u64(),
+});
+
+export const ClanScoreSchema = defineSchema("trenches.clan_score", {
+  clanId: str().indexed(),
+  season: str().indexed(),
+  score: dec().indexed(),
+  rank: i32().indexed(),
+  podiums: i32(),
+  members: i32(),
+  computedAt: u64(),
 });
 
 export const SponsorshipSchema = defineSchema("trenches.sponsorship", {
@@ -76,4 +108,7 @@ export const SCHEMA_NAMES = {
   payout: "trenches.payout",
   profile: "trenches.profile",
   sponsorship: "trenches.sponsorship",
+  clan: "trenches.clan",
+  clanMember: "trenches.clan_member",
+  clanScore: "trenches.clan_score",
 } as const;

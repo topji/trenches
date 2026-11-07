@@ -2,14 +2,14 @@
  * Entity repository: domain types ↔ Arkiv rows. Every public page reads through these queries.
  * Queries: docs/integrations/arkiv.md §4 (no IN / NOT → or(eq, eq); one orderBy; limit ≤ 100).
  */
-import type { Entry, LeaderboardRow, Payout, Profile, Sponsorship, Trench, TrenchStatus, Address } from "@trenches/core";
+import type { Clan, ClanMember, ClanScore, Entry, LeaderboardRow, Payout, Profile, Sponsorship, Trench, TrenchStatus, Address } from "@trenches/core";
 import { asc, desc, eq, or } from "@arkiv-network/sdk/query";
 import { addr, dec, u64 } from "@arkiv-network/sdk/schema";
 import type { Hex } from "viem";
 import { decodeJson, encodeJson, isoToU64, toDec, u64ToIso } from "./codec.js";
 import { expiryForTrench, expiryLong } from "./expiry.js";
 import type { ArkivPublicClient, ArkivWalletClient } from "./client.js";
-import { EntrySchema, LeaderboardSchema, PayoutSchema, ProfileSchema, SponsorshipSchema, TrenchSchema } from "./schemas.js";
+import { ClanMemberSchema, ClanSchema, ClanScoreSchema, EntrySchema, LeaderboardSchema, PayoutSchema, ProfileSchema, SponsorshipSchema, TrenchSchema } from "./schemas.js";
 
 export interface WriteResult {
   entityKey: Hex;
@@ -76,6 +76,11 @@ export function profileToValues(p: Profile) {
     ...(p.bestFinish !== undefined ? { bestFinish: p.bestFinish } : {}),
     totalVolumeUsd: dec(toDec(p.totalVolumeUsd)),
     totalPnlUsd: dec(toDec(p.totalPnlUsd)),
+    ...(p.handle ? { handle: p.handle } : {}),
+    ...(p.clanId ? { clanId: p.clanId } : {}),
+    ...(p.xp !== undefined ? { xp: p.xp } : {}),
+    ...(p.level !== undefined ? { level: p.level } : {}),
+    ...(p.title ? { title: p.title } : {}),
   };
 }
 
@@ -243,6 +248,11 @@ export class ArkivRepo {
       bestFinish: row.bestFinish?.value,
       totalVolumeUsd: Number(row.totalVolumeUsd.value),
       totalPnlUsd: Number(row.totalPnlUsd.value),
+      ...(row.handle?.value ? { handle: row.handle.value } : {}),
+      ...(row.clanId?.value ? { clanId: row.clanId.value } : {}),
+      ...(row.xp?.value !== undefined ? { xp: row.xp.value } : {}),
+      ...(row.level?.value !== undefined ? { level: row.level.value } : {}),
+      ...(row.title?.value ? { title: row.title.value } : {}),
     };
   }
 
@@ -271,6 +281,58 @@ export class ArkivRepo {
     const r = await this.owned(this.pub.select({ payload: true }).from(SponsorshipSchema).where(eq("trenchId", trenchId)).limit(1)).fetch();
     const row = r.entities[0];
     return row ? decodeJson<Sponsorship>(row.payload.value) : null;
+  }
+
+  /* Clans */
+
+  async createClan(c: Clan): Promise<WriteResult> {
+    const r = await this.w().createEntity(ClanSchema, { clanId: c.id, tag: c.tag, leader: addr(c.leader), name: c.name.slice(0, 60), open: c.open, memberCount: c.memberCount, createdAt: u64(isoToU64(c.createdAt)) }, { expiration: expiryLong() });
+    return { entityKey: r.entityKey, txHash: r.txHash };
+  }
+
+  async patchClan(entityKey: Hex, set: { memberCount?: number; open?: boolean; name?: string }): Promise<WriteResult> {
+    const r = await this.w().patchEntity(ClanSchema, entityKey, { set });
+    return { entityKey: r.entityKey, txHash: r.txHash };
+  }
+
+  async getClanByTag(tag: string): Promise<(Clan & { entityKey: Hex }) | null> {
+    const r = await this.owned(this.pub.select().from(ClanSchema).where(eq("tag", tag.toUpperCase())).limit(1)).fetch();
+    const row = r.entities[0];
+    return row ? { entityKey: row.$key, id: row.clanId.value, tag: row.tag.value, leader: row.leader.value as Address, name: row.name.value, open: row.open.value, memberCount: row.memberCount.value, description: "", createdAt: u64ToIso(row.createdAt.value) } : null;
+  }
+
+  async listClans(limit = 100): Promise<(Clan & { entityKey: Hex })[]> {
+    const r = await this.owned(this.pub.select().from(ClanSchema).orderBy(desc("createdAt")).limit(Math.min(limit, 100))).fetch();
+    return r.entities.map((row) => ({ entityKey: row.$key, id: row.clanId.value, tag: row.tag.value, leader: row.leader.value as Address, name: row.name.value, open: row.open.value, memberCount: row.memberCount.value, description: "", createdAt: u64ToIso(row.createdAt.value) }));
+  }
+
+  async createClanMember(m: ClanMember): Promise<WriteResult> {
+    const r = await this.w().createEntity(ClanMemberSchema, { clanId: m.clanId, trader: addr(m.trader), joinedAt: u64(isoToU64(m.joinedAt)) }, { expiration: expiryLong() });
+    return { entityKey: r.entityKey, txHash: r.txHash };
+  }
+
+  async listClanMembers(clanId: string): Promise<ClanMember[]> {
+    const r = await this.owned(this.pub.select().from(ClanMemberSchema).where(eq("clanId", clanId)).orderBy(asc("joinedAt")).limit(100)).fetch();
+    return r.entities.map((row) => ({ clanId: row.clanId.value, trader: row.trader.value as Address, joinedAt: u64ToIso(row.joinedAt.value) }));
+  }
+
+  async listClanScores(season: string): Promise<(ClanScore & { entityKey: Hex })[]> {
+    const r = await this.owned(this.pub.select().from(ClanScoreSchema).where(eq("season", season)).orderBy(asc("rank")).limit(100)).fetch();
+    return r.entities.map((row) => ({ entityKey: row.$key, clanId: row.clanId.value, season: row.season.value, score: Number(row.score.value), rank: row.rank.value, podiums: row.podiums.value, members: row.members.value, computedAt: u64ToIso(row.computedAt.value) }));
+  }
+
+  /** Rewrite the ladder for a season in one batch: patch rows that exist, create the rest, delete the gone. */
+  async upsertClanScores(season: string, rows: ClanScore[]): Promise<{ txHash: Hex }> {
+    const existing = await this.listClanScores(season);
+    const byClan = new Map(existing.map((e) => [e.clanId, e.entityKey]));
+    const values = (r: ClanScore) => ({ clanId: r.clanId, season: r.season, score: dec(toDec(r.score)), rank: r.rank, podiums: r.podiums, members: r.members, computedAt: u64(isoToU64(r.computedAt)) });
+    const creates = rows.filter((r) => !byClan.has(r.clanId)).map((r) => ({ schema: ClanScoreSchema, values: values(r), expiration: expiryLong() }));
+    const patches = rows.filter((r) => byClan.has(r.clanId)).map((r) => ({ schema: ClanScoreSchema, entityKey: byClan.get(r.clanId)!, set: values(r) }));
+    const keep = new Set(rows.map((r) => r.clanId));
+    const deletes = existing.filter((e) => !keep.has(e.clanId)).map((e) => ({ entityKey: e.entityKey }));
+    if (!creates.length && !patches.length && !deletes.length) return { txHash: "0x" as Hex };
+    const r = await this.w().executeBatch({ creates, patches, deletes });
+    return { txHash: r.txHash };
   }
 
   /** Delete by key (used by the smoke script's cleanup and by tests). */
