@@ -38,11 +38,17 @@ export default async function LandingPage() {
     reader.listTrenches({ statuses: ["live", "funded"], limit: 20 }).then((r) => r.sort((a, b) => b.prizePoolUsdc - a.prizePoolUsdc).slice(0, 4)).catch(() => []),
     stats(),
   ]);
-  // Board preview: the richest live season, else the most recently settled one.
-  const preview = liveSeasons[0] ?? (await reader.listTrenches({ statuses: ["settled"], limit: 5 }).then((r) => r[0] ?? null).catch(() => null));
-  const previewRows = preview
-    ? await Promise.all([reader.getLeaderboard(preview.id).catch(() => []), reader.listEntries(preview.id).catch(() => [])]).then(([lb, en]) => mergeBoard(lb, en).slice(0, 5))
-    : [];
+  // Board preview: the live season with a board; if none has entrants, the most recent settled one with a board.
+  const candidates = [...liveSeasons, ...(await reader.listTrenches({ statuses: ["settled"], limit: 8 }).catch(() => []))];
+  const boards = await Promise.all(
+    candidates.slice(0, 8).map(async (t) => {
+      const [lb, en] = await Promise.all([reader.getLeaderboard(t.id).catch(() => []), reader.listEntries(t.id).catch(() => [])]);
+      return { t, rows: mergeBoard(lb, en) };
+    }),
+  );
+  const pick = boards.find((b) => b.rows.length > 0 && b.t.status !== "settled") ?? boards.find((b) => b.rows.length > 0) ?? boards[0] ?? null;
+  const preview = pick?.t ?? null;
+  const previewRows = pick?.rows.slice(0, 5) ?? [];
   const now = Date.now();
 
   return (
@@ -62,7 +68,7 @@ export default async function LandingPage() {
             <ButtonLink href="/seasons" variant="secondary">{copy.cta.browse}</ButtonLink>
           </div>
           {st && (
-            <dl className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <dl className="grid grid-cols-2 gap-2">
               {[
                 ["Seasons", String(st.seasons)],
                 ["Humans", String(st.humans)],
