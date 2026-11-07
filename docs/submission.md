@@ -3,10 +3,10 @@
 ## ETHGlobal showcase
 
 **Project name:** Trenches
-**Tagline:** Trading competitions your community can't fake. Trenches, one human per slot, prizes that pay themselves out.
+**Tagline:** The social layer for on-chain traders. Trade with your crew, climb together.
 
 **Description.**
-Trenches turns a community's trading into a sport. Traders found a Trench (their crew) and a host opens a season with a prize pool locked in escrow on Hedera. Entrants prove they are a unique human once with World ID, then trade from their own wallet through Definitive Flash: market, DCA, bracket, limit and TWAP orders, with a 0.3 % platform fee the host shares in. Every fill is scored into a public leaderboard written to Arkiv, so anyone can check the ranking with one query. At the deadline the escrow pays the winners by itself, the host's fee share goes out as a Hedera Scheduled Transaction, and the whole history sits on an HCS topic.
+Trenches is the social layer for on-chain traders. Solo trading becomes a team sport: traders found a Trench (their crew), enter seasons together, and climb a public monthly ladder. A host opens a season with a prize pool locked in escrow on Hedera. Entrants prove they are a unique human once with World ID, then trade from their own wallet through Definitive Flash: market, DCA, bracket, limit and TWAP orders, with a 0.3 % platform fee the host shares in. Every fill is scored into a public leaderboard written to Arkiv, so anyone can check the ranking with one query. At the deadline the escrow pays the winners by itself, the host's fee share goes out as a Hedera Scheduled Transaction, and the whole history sits on an HCS topic.
 
 A Trench has one leader, up to fifty members, a shared season score with a per-member ROI cap so a whale cannot carry it, and a monthly ladder. Traders join and leave freely; what they trade while inside counts for that Trench. Seasons are Trench-only or open to the world. Handles, XP and titles (Recruit to Warlord) show as `[TAG] handle · title` on every board.
 
