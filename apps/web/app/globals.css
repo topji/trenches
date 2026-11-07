@@ -118,7 +118,7 @@
     @apply flex flex-col gap-1;
   }
   .stat-figure {
-    @apply font-scoreboard text-[28px] lg:text-[36px] tabular;
+    @apply font-scoreboard text-[22px] lg:text-[26px] tabular truncate;
   }
   .nav-blur {
     background: color-mix(in srgb, var(--bg) 82%, transparent);
