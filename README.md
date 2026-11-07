@@ -2,7 +2,7 @@
 
 **Trading competitions your community can't fake.** Traders group into **Trenches**; a host opens a **season** with a prize pool escrowed on Hedera. Entrants verify once with World ID, trade from their own wallet through Definitive Flash, and the leaderboard, written to Arkiv, settles it. At the deadline the escrow pays the winners on its own. Trenches compete on a monthly ladder from their members' results.
 
-Built solo at ETHGlobal Mumbai, 5–7 Nov 2026. Live: **https://jointrenches.xyz** · Repo: https://github.com/topji/trenches · MIT.
+Built solo at ETHGlobal Mumbai, 5–7 Nov 2026. Live: **https://www.jointrenches.xyz** · Worker health: https://worker.jointrenches.xyz/health · Repo: https://github.com/topji/trenches · MIT.
 
 ## What a judge can verify in five minutes
 

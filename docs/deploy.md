@@ -14,3 +14,7 @@
 ## Check
 - `BASE_URL=https://jointrenches.xyz DEMO_SECRET=… pnpm demo` creates, funds, joins, settles and prints every link.
 - Open the Trench page it prints on a phone.
+
+## Live (Sat 7 Nov 2026)
+- Web: https://www.jointrenches.xyz (Vercel project `trenches`, root `apps/web`; deploys run from a git-less copy of the tree because the commit author email is not a Vercel team member).
+- Worker: Railway project `trenches-worker`, service `worker`, Dockerfile via `RAILWAY_DOCKERFILE_PATH`; health at https://worker.jointrenches.xyz/health (CNAME `worker` → `920tdq42.up.railway.app`).
