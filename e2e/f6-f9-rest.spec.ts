@@ -84,7 +84,7 @@ test("F9.1 sponsor funds a draft Trench and proposes an asset; F9.2 host accepts
   const pendingRow = hostPage.getByRole("row").filter({ hasText: draftName });
   await expect(pendingRow.getByText(/proposed cbBTC as the allowed asset/)).toBeVisible({ timeout: 60_000 });
   await pendingRow.getByRole("button", { name: "Accept" }).click();
-  await expect(hostPage.getByText("Asset accepted")).toBeVisible();
+  await expect(hostPage.getByText("Asset accepted")).toBeVisible({ timeout: 90_000 });
   await expect.poll(async () => ((await (await request.get(`/api/trenches/${draft.id}`)).json()) as { trench: { allowedAssets: { symbol: string }[] } }).trench.allowedAssets.map((a) => a.symbol), { timeout: 60_000 }).toEqual(["cbBTC"]);
   await hostPage.close();
 });

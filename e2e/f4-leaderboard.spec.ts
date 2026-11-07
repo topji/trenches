@@ -22,7 +22,7 @@ test("F4.1 logged out: the board renders from the Arkiv query with real P&L", as
   expect(mine?.pnlUsd).not.toBe(0);
 
   await page.goto(`/t/${GATE_SLUG}`);
-  const row = page.getByRole("row").filter({ hasText: "0xd3ad…d00c" });
+  const row = page.getByRole("region", { name: "Leaderboard" }).getByRole("row").filter({ hasText: "0xd3ad…d00c" }).first();
   await expect(row).toBeVisible();
   await expect(row).toContainText(/[+−]\$\d/); // signed P&L with explicit sign
   await expect(row.getByLabel("Verified unique human (World ID)")).toBeVisible();
@@ -46,12 +46,13 @@ test("F4.2 rank change highlights the moved rows and announces the caller's new 
   });
   await page.clock.install();
   await page.goto(`/t/${GATE_SLUG}`);
-  await expect(page.getByRole("row").filter({ hasText: "0xd3ad…d00c" })).toBeVisible();
+  const board = page.getByRole("region", { name: "Leaderboard" });
+  await expect(board.getByRole("row").filter({ hasText: "0xd3ad…d00c" }).first()).toBeVisible();
 
   await page.clock.runFor(15_500); // poll 1: establishes ranks TRADER=1
-  await expect(page.getByRole("row").filter({ hasText: "0x9999…9999" })).toBeVisible();
+  await expect(board.getByRole("row").filter({ hasText: "0x9999…9999" })).toBeVisible();
   await page.clock.runFor(15_500); // poll 2: swap → both rows flash, live region speaks
-  const mine = page.getByRole("row").filter({ hasText: "0xd3ad…d00c" });
+  const mine = board.getByRole("row").filter({ hasText: "0xd3ad…d00c" }).first();
   await expect(mine).toHaveClass(/rank-flash/);
   await expect(mine).toContainText("2");
   await expect(page.getByRole("status")).toHaveText("You moved to rank 2.");

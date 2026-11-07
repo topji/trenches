@@ -104,7 +104,7 @@ test("clan season page shows [TAG] handle · title; fast-forward settles and the
   test.slow();
   await page.goto(`/t/${seasonSlug}`);
   await expect(page.getByRole("link", { name: `internal season [${tag}]` })).toBeVisible();
-  const leaderRow = page.getByRole("row").filter({ hasText: `[${tag}] lead_${tag.toLowerCase()}` });
+  const leaderRow = page.getByRole("row").filter({ hasText: `lead_${tag.toLowerCase()}` }).filter({ hasText: `[${tag}]` }).first();
   await expect(leaderRow).toBeVisible({ timeout: 60_000 });
   await expect(leaderRow).toContainText("Recruit");
   await page.screenshot({ path: testInfo.outputPath("clan-season-board.png"), fullPage: true });
@@ -130,5 +130,5 @@ test("clan season page shows [TAG] handle · title; fast-forward settles and the
   await page.screenshot({ path: testInfo.outputPath("ladder.png"), fullPage: true });
   await page.goto(`/u/${LEADER}`);
   await expect(page.getByText(/Level \d · \w+/)).toBeVisible();
-  await expect(page.getByText(`[${tag}] lead_${tag.toLowerCase()}`).first()).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(`[${tag}] lead_${tag.toLowerCase()}`);
 });
