@@ -45,9 +45,9 @@ test("F8 discovery: funded + live from Arkiv, chips by status and asset, drafts 
   await expect(page).toHaveURL(/status=ended/);
   await expect(page.getByText("Flash gate Trench")).toBeVisible(); // settled, only under Ended
   await chips.getByRole("link", { name: "All", exact: true }).click();
-  await expect(page).toHaveURL(/\/trenches$/);
+  await expect(page).toHaveURL(/\/battles$/);
   await chips.getByRole("link", { name: "WETH", exact: true }).click();
-  await expect(page).toHaveURL(/\/trenches\?asset=WETH$/);
+  await expect(page).toHaveURL(/\/battles\?asset=WETH$/);
   await expect(page.getByText(fundedName)).toBeVisible({ timeout: 60_000 });
 });
 

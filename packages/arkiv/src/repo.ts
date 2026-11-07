@@ -259,8 +259,13 @@ export class ArkivRepo {
   async upsertProfile(p: Profile): Promise<WriteResult> {
     const existing = await this.getProfile(p.address);
     if (existing) {
-      const r = await this.w().patchEntity(ProfileSchema, existing.entityKey, { set: profileToValues(p) });
-      return { entityKey: r.entityKey, txHash: r.txHash };
+      try {
+        const r = await this.w().patchEntity(ProfileSchema, existing.entityKey, { set: profileToValues(p) });
+        return { entityKey: r.entityKey, txHash: r.txHash };
+      } catch {
+        // Entities created before the identity columns existed reject a patch that adds them: replace instead.
+        await this.w().deleteEntity({ entityKey: existing.entityKey }).catch(() => undefined);
+      }
     }
     const r = await this.w().createEntity(ProfileSchema, profileToValues(p), { expiration: expiryLong() });
     return { entityKey: r.entityKey, txHash: r.txHash };

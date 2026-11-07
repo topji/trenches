@@ -77,7 +77,7 @@ export async function setHandle(trader: Address, raw: unknown): Promise<Identity
     if (/unique|duplicate/i.test((e as Error).message)) throw conflict("Handle taken.");
     throw e;
   }
-  await syncProfileToArkiv(trader).catch((e) => log.warn({ trader, err: (e as Error).message }, "profile arkiv sync failed"));
+  void syncProfileToArkiv(trader).catch((e) => log.warn({ trader, err: (e as Error).message }, "profile arkiv sync failed"));
   return (await identitiesFor([trader]))[trader.toLowerCase()]!;
 }
 
@@ -124,7 +124,7 @@ export async function createClan(leader: Address, raw: unknown): Promise<Clan & 
     out.arkivError = (e as Error).message;
     log.error({ clanId: clan.id, err: out.arkivError }, "arkiv clan write failed");
   }
-  await recomputeXp(leader).catch(() => undefined);
+  void recomputeXp(leader).catch(() => undefined);
   return out;
 }
 
@@ -156,7 +156,7 @@ export async function joinClan(trader: Address, clanId: string, inviteCode?: str
   } catch (e) {
     out.arkivError = (e as Error).message;
   }
-  await recomputeXp(trader).catch(() => undefined);
+  void recomputeXp(trader).catch(() => undefined);
   return out;
 }
 
@@ -195,7 +195,7 @@ export async function leaveClan(trader: Address): Promise<{ left: boolean; newLe
   } catch (e) {
     log.warn({ trader, err: (e as Error).message }, "arkiv leave sync failed");
   }
-  await recomputeXp(trader).catch(() => undefined);
+  void recomputeXp(trader).catch(() => undefined);
   return { left: true, ...(newLeader ? { newLeader } : {}), ...(deleted ? { deleted: true } : {}) };
 }
 

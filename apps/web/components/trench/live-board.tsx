@@ -20,6 +20,13 @@ export function LiveBoard({ trenchId, initialRows, initialIdentities = {}, settl
   const [announce, setAnnounce] = useState("");
   const ranks = useRef(new Map(initialRows.map((r) => [r.trader.toLowerCase(), r.rank])));
 
+  // Server re-renders (router.refresh after a join) hand down new rows; adopt them.
+  useEffect(() => {
+    setRows(initialRows);
+    setIdentities(initialIdentities);
+    ranks.current = new Map(initialRows.map((r) => [r.trader.toLowerCase(), r.rank]));
+  }, [initialRows, initialIdentities]);
+
   useEffect(() => {
     if (!live && !settled) return;
     let stopped = false;
