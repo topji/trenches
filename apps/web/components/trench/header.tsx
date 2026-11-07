@@ -5,6 +5,7 @@ import { pillFor } from "@/lib/trench-view";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Countdown } from "./countdown";
 import { Bar } from "@/components/ui/medal";
+import { PixelAvatar } from "@/components/ui/pixel";
 import Link from "next/link";
 
 /** Trench page header: countdown is the hero, pool beside it (DESIGN_SYSTEM §4 skeleton). */
@@ -31,6 +32,7 @@ export function TrenchHeader({ trench, entrants, paidAt, clanTag }: { trench: Tr
         <h1 className="text-h1">{trench.name}</h1>
         <p className="text-muted mt-2">
           {copy.trench.by}{" "}
+          <PixelAvatar seed={trench.adminAddress} size={20} className="inline-block align-middle mr-1" />
           <Link href={`/u/${trench.adminAddress}`} className="font-mono text-[13px]">
             {shortAddress(trench.adminAddress)}
           </Link>

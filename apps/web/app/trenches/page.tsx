@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Podium } from "@/components/clans/podium";
 import { Bar, Medal, TagBadge } from "@/components/ui/medal";
+import { PixelBanner } from "@/components/ui/pixel";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: copy.clans.h1 };
@@ -46,7 +47,7 @@ export default async function ClansPage({ searchParams }: { searchParams: Promis
         <EmptyState action={<ButtonLink href="/create-trench" size="sm">{copy.clans.create}</ButtonLink>}>{copy.clans.empty}</EmptyState>
       ) : (
         <>
-        <Podium rows={rows.slice(0, 3).map((r) => ({ rank: r.rank, tag: r.tag, name: r.name, score: r.score, members: r.members }))} />
+        <Podium rows={rows.slice(0, 3).map((r) => ({ clanId: r.clanId, rank: r.rank, tag: r.tag, name: r.name, score: r.score, members: r.members }))} />
         <table className="w-full border-t border-line">
           <thead>
             <tr className="text-small text-muted text-left">
@@ -62,8 +63,8 @@ export default async function ClansPage({ searchParams }: { searchParams: Promis
               <tr key={r.clanId} className="h-14 border-t border-line row-in row-hover" style={{ animationDelay: `${Math.min(i, 10) * 120}ms` }}>
                 <td className="pr-2"><Medal rank={r.rank} /></td>
                 <td className="pr-2">
-                  <Link href={`/trench/${r.tag}`} className="font-semibold inline-flex items-center gap-2 flex-wrap">
-                    <TagBadge tag={r.tag} /> {r.name}
+                  <Link href={`/trench/${r.tag}`} className="font-semibold inline-flex items-center gap-3 flex-wrap">
+                    <PixelBanner seed={r.clanId} width={56} height={28} /> <TagBadge tag={r.tag} /> {r.name}
                   </Link>
                   <Bar value={r.score / maxScore} className="mt-2 max-w-[220px]" tone={r.score < 0 ? "loss" : "accent"} />
                 </td>

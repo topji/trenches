@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { clsx } from "clsx";
 import { Medal, TagBadge } from "@/components/ui/medal";
+import { PixelBanner } from "@/components/ui/pixel";
 
 export interface PodiumRow {
+  clanId: string;
   rank: number;
   tag: string;
   name: string;
@@ -23,6 +25,7 @@ export function Podium({ rows }: { rows: PodiumRow[] }) {
             <Medal rank={r} />
             {row ? (
               <>
+                <PixelBanner seed={row.clanId} width={96} height={40} />
                 <TagBadge tag={row.tag} />
                 <Link href={`/trench/${row.tag}`} className="font-semibold leading-tight text-[15px] line-clamp-2">{row.name}</Link>
                 <span className={clsx("font-scoreboard tabular", r === 1 ? "text-[32px] text-accent" : "text-[24px]")}>{row.score.toFixed(1)}</span>

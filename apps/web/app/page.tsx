@@ -108,7 +108,7 @@ export default async function LandingPage() {
           {top.length === 0 ? (
             <EmptyState action={<ButtonLink href="/create-trench" size="sm">{copy.clans.create}</ButtonLink>}>{copy.clans.empty}</EmptyState>
           ) : (
-            <Podium rows={top.map((r) => ({ rank: r.rank, tag: r.tag, name: r.name, score: r.score, members: r.members }))} />
+            <Podium rows={top.map((r) => ({ clanId: r.clanId, rank: r.rank, tag: r.tag, name: r.name, score: r.score, members: r.members }))} />
           )}
         </section>
 

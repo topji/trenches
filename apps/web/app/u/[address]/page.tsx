@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { identitiesFor, profileFor, type Identity } from "@trenches/services";
 import { levelFor } from "@trenches/core";
 import { IdentityCard } from "@/components/profile/identity-card";
+import { PixelAvatar } from "@/components/ui/pixel";
 import { copy } from "@/lib/copy";
 import { formatCompactUsd, formatPnl, shortAddress } from "@/lib/format";
 import { ButtonLink } from "@/components/ui/button";
@@ -38,10 +39,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ addres
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
-        <h1 className={`text-h1 inline-flex items-center gap-3 ${identity?.handle ? "" : "font-mono"}`}>
+        <div className="flex items-center gap-4">
+          <PixelAvatar seed={address} size={96} />
+          <h1 className={`text-h1 inline-flex items-center gap-3 ${identity?.handle ? "" : "font-mono"}`}>
           {identity?.handle ? `${identity.tag ? `[${identity.tag}] ` : ""}${identity.handle}` : shortAddress(address)}
           {view.totals.verifiedHuman ? <HumanBadge /> : <span className="text-small text-faint font-sans">{copy.profile.notVerified}</span>}
-        </h1>
+          </h1>
+        </div>
         <IdentityCard address={address} identity={identity} nextXp={lv.nextXp} progress={lv.progress} />
         <dl className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((st) => (

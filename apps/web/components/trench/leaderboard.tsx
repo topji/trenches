@@ -8,6 +8,7 @@ import { useSession } from "@/lib/session";
 import { HumanBadge } from "@/components/ui/human-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Bar, Medal, TagBadge, TitleChip } from "@/components/ui/medal";
+import { PixelAvatar } from "@/components/ui/pixel";
 import type { BoardRow } from "@/lib/board";
 import { displayName, type IdentityLite } from "@/lib/identity";
 
@@ -45,6 +46,7 @@ export function Leaderboard({ rows, settled, flash, identities = {} }: { rows: B
                 <td className="pr-2"><Medal rank={r.rank} /></td>
                 <td className="pr-2">
                   <span className="inline-flex items-center gap-2 flex-wrap">
+                    <PixelAvatar seed={r.trader} size={28} />
                     {identities[r.trader.toLowerCase()]?.tag && <TagBadge tag={identities[r.trader.toLowerCase()]!.tag!} />}
                     <Link href={`/u/${r.trader}`} className={identities[r.trader.toLowerCase()]?.handle ? "font-semibold" : "font-mono text-[13px]"}>
                       {identities[r.trader.toLowerCase()]?.handle ?? displayName(r.trader, null)}

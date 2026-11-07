@@ -12,6 +12,7 @@ import { ClanActions } from "@/components/clans/clan-actions";
 import { HumanBadge } from "@/components/ui/human-badge";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Bar, Medal, TagBadge, TitleChip } from "@/components/ui/medal";
+import { PixelAvatar, PixelBanner } from "@/components/ui/pixel";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,8 @@ export default async function ClanPage({ params }: { params: Promise<{ tag: stri
   const maxContribution = Math.max(1, ...[...stats.values()].map((m) => Math.abs(m.contribution)));
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-3">
+      <header className="flex flex-col gap-4">
+        <PixelBanner seed={clan.id} width={1080} height={160} className="w-full h-[120px] lg:h-[160px]" />
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="flex items-center gap-2"><TagBadge tag={clan.tag} />{mine && <Medal rank={mine.rank} />}</p>
@@ -78,7 +80,7 @@ export default async function ClanPage({ params }: { params: Promise<{ tag: stri
                 <tr key={m.trader} className="h-14 border-t border-line">
                   <td className="pr-2">
                     <Link href={`/u/${m.trader}`} className="font-mono text-[13px] inline-flex items-center gap-2">
-                      {displayName(m.trader, id)} <HumanBadge />
+                      <PixelAvatar seed={m.trader} size={28} /> {displayName(m.trader, id)} <HumanBadge />
                     </Link>
                   </td>
                   <td className="pr-2"><TitleChip level={id?.level ?? 1} title={id?.title ?? "Recruit"} /></td>
