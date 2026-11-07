@@ -4,8 +4,9 @@ export const copy = {
     name: "Trenches",
     site: "jointrenches.xyz",
     handle: "@jointrenches",
-    tagline: "Trading competitions your community can’t fake. Join the trenches.",
-    sub: "Found a Trench, host seasons, trade from your own wallet, and let the leaderboard settle it. Prizes pay out on their own.",
+    tagline: "Trade with your crew. Climb together.",
+    positioning: "The social layer for on-chain traders",
+    sub: "Trenches turns solo trading into a team sport. Found a Trench with people you trust, enter seasons from your own wallet, and rise up a public ladder nobody can fake: one human per slot, every fill scored on-chain, prizes that pay out on their own.",
     footer:
       "Built at ETHGlobal Mumbai · Open source · Execution by Definitive Flash · Records on Arkiv · Escrow on Hedera · Humans by World ID",
   },
@@ -23,13 +24,14 @@ export const copy = {
   landing: {
     liveHeading: "Live seasons",
     liveEmpty: "No live seasons yet. Create one for your Trench.",
-    howHeading: "How a season works",
+    howHeading: "How it works",
     how: [
-      { title: "Host a season", body: "Pick the assets, the window, and the prize pool. The pool is escrowed on Hedera." },
-      { title: "Entrants join as humans", body: "One World ID check, one slot per person. No alt accounts on the board. Traders group into Trenches that climb a monthly ladder." },
-      { title: "Trade from your own wallet", body: "Orders go through Definitive Flash. Nothing is custodied." },
-      { title: "The board settles it", body: "Fills rank the board on Arkiv. At the deadline the pool pays the winners." },
+      { title: "Found a Trench", body: "Rally your group under one tag. Open to anyone, or invite-only. One leader, up to fifty traders." },
+      { title: "Enter seasons", body: "Internal seasons for your Trench, global seasons against everyone. One World ID check, one slot per human." },
+      { title: "Trade as yourself", body: "Orders go through Definitive Flash from your own wallet. Nothing is custodied, nothing is faked." },
+      { title: "Climb the ladder", body: "Every fill scores on Arkiv. Your results lift your Trench, and the prize pool pays the winners on Hedera." },
     ],
+    ctaFound: "Found a Trench",
   },
   discovery: {
     h1: "Live and upcoming seasons",

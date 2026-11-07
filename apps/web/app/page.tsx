@@ -58,14 +58,14 @@ export default async function LandingPage() {
         <div className="flex flex-col gap-6">
           <p className="eyebrow inline-flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-pill bg-accent live-dot" aria-hidden />
-            ETHGlobal Mumbai · {seasonLabel(season)}
+            {copy.app.positioning} · {seasonLabel(season)}
           </p>
           <h1 className="text-display max-w-[14ch]">{copy.app.tagline}</h1>
           <p className="text-muted text-[17px] max-w-[52ch]">{copy.app.sub}</p>
           <div className="flex flex-wrap gap-3">
-            <ButtonLink href="/create">{copy.cta.create}</ButtonLink>
-            <ButtonLink href="/create-trench" variant="secondary">{copy.clans.create}</ButtonLink>
+            <ButtonLink href="/create-trench">{copy.landing.ctaFound}</ButtonLink>
             <ButtonLink href="/seasons" variant="secondary">{copy.cta.browse}</ButtonLink>
+            <ButtonLink href="/create" variant="secondary">{copy.cta.create}</ButtonLink>
           </div>
           {st && (
             <dl className="grid grid-cols-2 gap-2">
