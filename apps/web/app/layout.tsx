@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   title: { default: copy.app.name, template: `%s · ${copy.app.name}` },
   description: copy.app.sub,
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  openGraph: { title: copy.app.name, description: copy.app.tagline, siteName: copy.app.name, type: "website" },
+  twitter: { card: "summary_large_image", title: copy.app.name, description: copy.app.tagline },
 };
 
 export const viewport: Viewport = {
