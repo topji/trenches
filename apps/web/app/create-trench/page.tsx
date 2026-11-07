@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { copy } from "@/lib/copy";
-import { CreateClanForm } from "@/components/clans/create-clan-form";
+import { CreateClanForm } from "@/components/clans/create-trench-form";
 
 export const metadata: Metadata = { title: copy.clans.create };
 

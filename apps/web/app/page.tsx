@@ -20,23 +20,23 @@ export default async function LandingPage() {
         <p className="mt-4 text-muted max-w-[60ch]">{copy.app.sub}</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <ButtonLink href="/create">{copy.cta.create}</ButtonLink>
-          <ButtonLink href="/trenches" variant="secondary">{copy.cta.browse}</ButtonLink>
+          <ButtonLink href="/battles" variant="secondary">{copy.cta.browse}</ButtonLink>
         </div>
       </section>
 
       <section aria-labelledby="clans-heading">
         <div className="flex items-baseline justify-between gap-4 mb-4">
           <h2 id="clans-heading" className="text-h2">{copy.clans.heroHeading}</h2>
-          <Link href="/clans" className="text-small text-muted">{copy.clans.season(seasonLabel(season))}</Link>
+          <Link href="/trenches" className="text-small text-muted">{copy.clans.season(seasonLabel(season))}</Link>
         </div>
         {top.length === 0 ? (
-          <EmptyState action={<ButtonLink href="/create-clan" size="sm">{copy.clans.create}</ButtonLink>}>{copy.clans.empty}</EmptyState>
+          <EmptyState action={<ButtonLink href="/create-trench" size="sm">{copy.clans.create}</ButtonLink>}>{copy.clans.empty}</EmptyState>
         ) : (
           <ol className="border-t border-line">
             {top.map((r, i) => (
               <li key={r.clanId} className="grid grid-cols-[48px_1fr_auto] items-center gap-x-4 h-14 border-b border-line row-in" style={{ animationDelay: `${i * 120}ms` }}>
                 <span className={clsx("font-scoreboard text-figure", rankTone[i])}>{r.rank}</span>
-                <Link href={`/c/${r.tag}`} className="font-semibold"><span className="font-mono text-[13px] text-muted">[{r.tag}]</span> {r.name}</Link>
+                <Link href={`/trench/${r.tag}`} className="font-semibold"><span className="font-mono text-[13px] text-muted">[{r.tag}]</span> {r.name}</Link>
                 <span className="font-scoreboard text-figure tabular">{r.score.toFixed(1)}</span>
               </li>
             ))}

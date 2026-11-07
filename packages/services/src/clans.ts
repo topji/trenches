@@ -15,7 +15,7 @@ import {
   type Clan,
   type Profile,
 } from "@trenches/core";
-import { and, clanMembers, clans, desc, entries, eq, inArray, leaderboard, profiles, sql, trenches, worldVerifications } from "@trenches/db";
+import { and, clanMembers, clanMemberships, clans, desc, entries, eq, inArray, isNull, leaderboard, profiles, sql, trenches, worldVerifications } from "@trenches/db";
 import { z } from "zod";
 import { log, services } from "./context.js";
 import { ServiceError, badRequest, conflict, forbidden, notFound } from "./errors.js";
@@ -52,7 +52,7 @@ export async function identitiesFor(traders: string[]): Promise<Record<string, I
 async function requireVerified(trader: Address): Promise<string> {
   const { db } = services();
   const [v] = await db.select({ nullifierHash: worldVerifications.nullifierHash }).from(worldVerifications).where(eq(worldVerifications.trader, trader.toLowerCase())).orderBy(desc(worldVerifications.verifiedAt)).limit(1);
-  if (!v) throw forbidden("Join a Trench and verify with World ID first.");
+  if (!v) throw forbidden("Join a battle and verify with World ID first.");
   return v.nullifierHash;
 }
 
@@ -106,6 +106,7 @@ export async function createClan(leader: Address, raw: unknown): Promise<Clan & 
     await db.transaction(async (tx) => {
       await tx.insert(clans).values({ id: clan.id, name: clan.name, tag: clan.tag, description: clan.description, leader: clan.leader, open: clan.open, inviteCode: clan.inviteCode ?? null, memberCount: 1, createdAt: now });
       await tx.insert(clanMembers).values({ trader: clan.leader, clanId: clan.id, joinedAt: now });
+      await tx.insert(clanMemberships).values({ clanId: clan.id, trader: clan.leader, joinedAt: now });
       await tx.update(profiles).set({ clanId: clan.id, updatedAt: now }).where(eq(profiles.trader, clan.leader));
     });
   } catch (e) {
@@ -132,14 +133,15 @@ export async function joinClan(trader: Address, clanId: string, inviteCode?: str
   await requireVerified(trader);
   await ensureProfileRow(trader);
   const [clanRow] = await db.select().from(clans).where(eq(clans.id, clanId)).limit(1);
-  if (!clanRow) throw notFound("That clan doesn't exist.");
+  if (!clanRow) throw notFound("That Trench doesn't exist.");
   const [existing] = await db.select({ tag: clans.tag }).from(clanMembers).innerJoin(clans, eq(clans.id, clanMembers.clanId)).where(eq(clanMembers.trader, trader.toLowerCase())).limit(1);
   if (existing) throw conflict(`You're already in [${existing.tag}].`);
   if (!clanRow.open && (inviteCode ?? "").trim() !== clanRow.inviteCode) throw forbidden("That invite code isn't right.");
-  if (clanRow.memberCount >= MAX_CLAN_MEMBERS) throw conflict("This clan is full.");
+  if (clanRow.memberCount >= MAX_CLAN_MEMBERS) throw conflict("This Trench is full.");
   const now = new Date().toISOString();
   await db.transaction(async (tx) => {
     await tx.insert(clanMembers).values({ trader: trader.toLowerCase(), clanId, joinedAt: now });
+    await tx.insert(clanMemberships).values({ clanId, trader: trader.toLowerCase(), joinedAt: now });
     await tx.update(clans).set({ memberCount: sql`${clans.memberCount} + 1` }).where(eq(clans.id, clanId));
     await tx.update(profiles).set({ clanId, updatedAt: now }).where(eq(profiles.trader, trader.toLowerCase()));
   });
@@ -158,26 +160,43 @@ export async function joinClan(trader: Address, clanId: string, inviteCode?: str
   return out;
 }
 
-export async function leaveClan(trader: Address): Promise<{ left: boolean }> {
+/**
+ * Anyone may leave. The membership row is closed (left_at = now) so past contributions stay with this
+ * Trench; future ones go to the next one. A leaving leader hands leadership to the longest-standing
+ * member; the last member leaving deletes the Trench.
+ */
+export async function leaveClan(trader: Address): Promise<{ left: boolean; newLeader?: Address; deleted?: boolean }> {
   const { db, arkiv } = services();
-  const [m] = await db.select().from(clanMembers).where(eq(clanMembers.trader, trader.toLowerCase())).limit(1);
+  const key = trader.toLowerCase();
+  const [m] = await db.select().from(clanMembers).where(eq(clanMembers.trader, key)).limit(1);
   if (!m) return { left: false };
   const [clanRow] = await db.select().from(clans).where(eq(clans.id, m.clanId)).limit(1);
-  if (clanRow && clanRow.leader === trader.toLowerCase()) throw conflict("Leaders can't leave their clan.");
+  if (!clanRow) return { left: false };
   const now = new Date().toISOString();
+  const others = (await db.select().from(clanMembers).where(and(eq(clanMembers.clanId, m.clanId), sql`${clanMembers.trader} <> ${key}`))).sort((a, b) => Date.parse(String(a.joinedAt)) - Date.parse(String(b.joinedAt)));
+  const newLeader = clanRow.leader === key ? (others[0]?.trader as Address | undefined) : undefined;
+  const deleted = others.length === 0;
   await db.transaction(async (tx) => {
-    await tx.delete(clanMembers).where(eq(clanMembers.trader, trader.toLowerCase()));
-    await tx.update(clans).set({ memberCount: sql`greatest(${clans.memberCount} - 1, 0)` }).where(eq(clans.id, m.clanId));
-    await tx.update(profiles).set({ clanId: null, updatedAt: now }).where(eq(profiles.trader, trader.toLowerCase()));
+    await tx.delete(clanMembers).where(eq(clanMembers.trader, key));
+    await tx.update(clanMemberships).set({ leftAt: now }).where(and(eq(clanMemberships.trader, key), eq(clanMemberships.clanId, m.clanId), isNull(clanMemberships.leftAt)));
+    await tx.update(profiles).set({ clanId: null, updatedAt: now }).where(eq(profiles.trader, key));
+    if (deleted) {
+      await tx.delete(clans).where(eq(clans.id, m.clanId));
+    } else {
+      await tx.update(clans).set({ memberCount: sql`greatest(${clans.memberCount} - 1, 0)`, ...(newLeader ? { leader: newLeader } : {}) }).where(eq(clans.id, m.clanId));
+    }
   });
   try {
     if (m.arkivEntityKey) await arkiv.deleteEntity(m.arkivEntityKey as `0x${string}`);
-    if (clanRow?.arkivEntityKey) await arkiv.patchClan(clanRow.arkivEntityKey as `0x${string}`, { memberCount: Math.max(0, clanRow.memberCount - 1) });
+    if (clanRow.arkivEntityKey) {
+      if (deleted) await arkiv.deleteEntity(clanRow.arkivEntityKey as `0x${string}`);
+      else await arkiv.patchClan(clanRow.arkivEntityKey as `0x${string}`, { memberCount: Math.max(0, clanRow.memberCount - 1) });
+    }
   } catch (e) {
     log.warn({ trader, err: (e as Error).message }, "arkiv leave sync failed");
   }
   await recomputeXp(trader).catch(() => undefined);
-  return { left: true };
+  return { left: true, ...(newLeader ? { newLeader } : {}), ...(deleted ? { deleted: true } : {}) };
 }
 
 export function toClan(r: typeof clans.$inferSelect): Clan {

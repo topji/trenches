@@ -4,8 +4,9 @@
  * capital (≈ Σ volume / 2, since volume counts both legs), podiums (rank ≤ 3 in settled battles) →
  * clamp(ROI, ±50) + 20 × podiums → Σ per clan → rank (ties: fewer members first).
  */
-import { clanSeasonScore, rankClans, seasonOf, type Address, type ClanScore } from "@trenches/core";
-import { and, clanMembers, clanScores, clans, eq, gte, inArray, leaderboard, lt, sql, trenches } from "@trenches/db";
+import { clanSeasonScore, computeLeaderboard, rankClans, seasonOf, type Address, type ClanScore, type Fill, type Side } from "@trenches/core";
+import { and, clanMembers, clanMemberships, clanScores, clans, eq, fills, gte, inArray, leaderboard, lt, sql, trenches } from "@trenches/db";
+import { markPrice } from "./leaderboard.js";
 import { log, services } from "./context.js";
 import { FEATURE_CLANS } from "./clans.js";
 import { withArkivRetry } from "./trenches.js";
@@ -26,28 +27,66 @@ function seasonBounds(season: string): { from: string; to: string } {
   return { from, to };
 }
 
-/** Per-trader season stats for the given traders (any clan). */
+export interface MembershipWindow {
+  clanId: string;
+  trader: string;
+  from: string;
+  to: string | null;
+}
+
+/**
+ * Per-member season stats **for one Trench**, windowed by membership: only fills placed while the trader
+ * was in this Trench count, and only settled battles that ended while they were a member count as podiums.
+ * P&L / peak capital come from the same average-cost scoring used for battle boards, run over the window.
+ */
+export async function memberSeasonsFor(clanId: string, season = seasonOf()): Promise<Map<string, MemberSeason>> {
+  const { db } = services();
+  const out = new Map<string, MemberSeason>();
+  const { from: sFrom, to: sTo } = seasonBounds(season);
+  const windows = await db.select().from(clanMemberships).where(eq(clanMemberships.clanId, clanId));
+  if (!windows.length) return out;
+  const traders = [...new Set(windows.map((w) => w.trader))];
+  const allFills = await db.select().from(fills).where(and(inArray(fills.trader, traders), gte(fills.filledAt, sFrom), lt(fills.filledAt, sTo)));
+  const settledRows = await db
+    .select({ trader: leaderboard.trader, rank: leaderboard.rank, endAt: trenches.endAt })
+    .from(leaderboard)
+    .innerJoin(trenches, eq(trenches.id, leaderboard.trenchId))
+    .where(and(inArray(leaderboard.trader, traders), eq(trenches.status, "settled"), gte(trenches.endAt, sFrom), lt(trenches.endAt, sTo), sql`${leaderboard.rank} <= 3`));
+  const marks: Record<string, number> = {};
+  for (const a of new Set(allFills.map((f) => f.asset.toLowerCase()))) {
+    const p = await markPrice(a);
+    if (p !== null) marks[a] = p;
+  }
+  for (const trader of traders) {
+    const mine = windows.filter((w) => w.trader === trader);
+    const inWindow = (t: string) => mine.some((w) => Date.parse(t) >= Date.parse(String(w.joinedAt)) && (!w.leftAt || Date.parse(t) < Date.parse(String(w.leftAt))));
+    const myFills = allFills.filter((f) => f.trader === trader && inWindow(String(f.filledAt)));
+    const domainFills: Fill[] = myFills.map((f) => ({
+      id: f.id, orderId: f.orderId, trenchId: f.trenchId, trader: f.trader as Address, asset: f.asset as Address, side: f.side as Side,
+      qty: Number(f.qty), priceUsd: Number(f.priceUsd), feeUsd: Number(f.feeUsd), txHash: f.txHash as Address, filledAt: new Date(f.filledAt).toISOString(),
+    }));
+    const assets = [...new Set(domainFills.map((f) => f.asset.toLowerCase()))].map((a) => ({ chainId: 8453, address: a as Address, symbol: a }));
+    const [row] = domainFills.length
+      ? computeLeaderboard({ trench: { id: `season:${season}`, startAt: sFrom, endAt: sTo, allowedAssets: assets }, entries: [{ trader: trader as Address, joinedAt: sFrom }], fills: domainFills, markPrices: marks, computedAt: new Date().toISOString() })
+      : [];
+    const podiums = settledRows.filter((r) => r.trader === trader && inWindow(String(r.endAt))).length;
+    const pnlUsd = row?.pnlUsd ?? 0;
+    const volumeUsd = row?.volumeUsd ?? 0;
+    const roiPct = row?.roiPct ?? 0;
+    const contribution = Math.round((Math.min(50, Math.max(-50, roiPct)) + 20 * podiums) * 100) / 100;
+    out.set(trader, { trader: trader as Address, pnlUsd, volumeUsd, roiPct, podiums, contribution });
+  }
+  return out;
+}
+
+/** Back-compat: stats for the traders' *current* Trench memberships. */
 export async function memberSeasons(traders: string[], season = seasonOf()): Promise<Map<string, MemberSeason>> {
   const { db } = services();
   const out = new Map<string, MemberSeason>();
   if (!traders.length) return out;
-  const { from, to } = seasonBounds(season);
-  const rows = await db
-    .select({ trader: leaderboard.trader, pnl: leaderboard.pnlUsd, vol: leaderboard.volumeUsd, rank: leaderboard.rank, status: trenches.status })
-    .from(leaderboard)
-    .innerJoin(trenches, eq(trenches.id, leaderboard.trenchId))
-    .where(and(inArray(leaderboard.trader, traders.map((t) => t.toLowerCase())), gte(trenches.startAt, from), lt(trenches.startAt, to), inArray(trenches.status, ["live", "ended", "settled"])));
-  for (const r of rows) {
-    const m = out.get(r.trader) ?? { trader: r.trader as Address, pnlUsd: 0, volumeUsd: 0, roiPct: 0, podiums: 0, contribution: 0 };
-    m.pnlUsd += Number(r.pnl);
-    m.volumeUsd += Number(r.vol);
-    if (r.status === "settled" && r.rank <= 3) m.podiums += 1;
-    out.set(r.trader, m);
-  }
-  for (const m of out.values()) {
-    const capital = Math.max(m.volumeUsd / 2, 1);
-    m.roiPct = Math.round(((m.pnlUsd / capital) * 100) * 100) / 100;
-    m.contribution = Math.round((Math.min(50, Math.max(-50, m.roiPct)) + 20 * m.podiums) * 100) / 100;
+  const current = await db.select().from(clanMembers).where(inArray(clanMembers.trader, traders.map((t) => t.toLowerCase())));
+  for (const clanId of new Set(current.map((c) => c.clanId))) {
+    for (const [t, m] of await memberSeasonsFor(clanId, season)) if (current.some((c) => c.trader === t && c.clanId === clanId)) out.set(t, m);
   }
   return out;
 }
@@ -57,14 +96,13 @@ export async function recomputeClanScores(season = seasonOf()): Promise<{ season
   const { db, arkiv } = services();
   const allClans = await db.select().from(clans);
   if (!allClans.length) return { season, clans: 0 };
-  const members = await db.select({ clanId: clanMembers.clanId, trader: clanMembers.trader }).from(clanMembers);
-  const stats = await memberSeasons(members.map((m) => m.trader), season);
   const computedAt = new Date().toISOString();
-  const unranked = allClans.map((c) => {
-    const mine = members.filter((m) => m.clanId === c.id).map((m) => stats.get(m.trader) ?? { trader: m.trader as Address, roiPct: 0, podiums: 0 });
-    const { score, podiums } = clanSeasonScore(mine.map((m) => ({ trader: m.trader, roiPct: m.roiPct, podiums: m.podiums })));
-    return { id: c.id, score, podiums, members: c.memberCount, createdAt: new Date(c.createdAt).toISOString() };
-  });
+  const unranked: { id: string; score: number; podiums: number; members: number; createdAt: string }[] = [];
+  for (const c of allClans) {
+    const stats = await memberSeasonsFor(c.id, season); // windowed: past members' time inside still counts here
+    const { score, podiums } = clanSeasonScore([...stats.values()].map((m) => ({ trader: m.trader, roiPct: m.roiPct, podiums: m.podiums })));
+    unranked.push({ id: c.id, score, podiums, members: c.memberCount, createdAt: new Date(c.createdAt).toISOString() });
+  }
   const ranked = rankClans(unranked);
   const rows: ClanScore[] = ranked.map((r) => ({ clanId: r.id, season, score: r.score, rank: r.rank, podiums: r.podiums, members: r.members, computedAt }));
   await db.transaction(async (tx) => {

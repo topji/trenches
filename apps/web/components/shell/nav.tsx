@@ -10,8 +10,8 @@ export function Nav() {
           {copy.app.name}
         </Link>
         <nav className="flex items-center gap-4 text-small text-muted" aria-label="Primary">
-          <Link href="/trenches" className="hover:text-text">{copy.nav.trenches}</Link>
-          <Link href="/clans" className="hover:text-text">{copy.nav.clans}</Link>
+          <Link href="/battles" className="hover:text-text">{copy.nav.trenches}</Link>
+          <Link href="/trenches" className="hover:text-text">{copy.nav.clans}</Link>
           <Link href="/create" className="hover:text-text">{copy.nav.create}</Link>
           <Link href="/dashboard" className="hover:text-text hidden sm:inline">{copy.nav.dashboard}</Link>
         </nav>

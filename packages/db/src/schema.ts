@@ -288,3 +288,16 @@ export const clanScores = pgTable(
   },
   (t) => ({ pk: primaryKey({ columns: [t.clanId, t.season] }) }),
 );
+
+/** Membership history: a trader's fills and results count for the Trench they were in at the time (joined_at ≤ t < left_at). */
+export const clanMemberships = pgTable(
+  "clan_memberships",
+  {
+    id: serial("id").primaryKey(),
+    clanId: text("clan_id").notNull().references(() => clans.id),
+    trader: text("trader").notNull(),
+    joinedAt: ts("joined_at").notNull(),
+    leftAt: ts("left_at"),
+  },
+  (t) => ({ traderIdx: index("clan_memberships_trader_idx").on(t.trader), clanIdx: index("clan_memberships_clan_idx").on(t.clanId) }),
+);

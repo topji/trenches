@@ -29,15 +29,15 @@ test.beforeAll(async ({ request }) => {
 test("create a clan, claim a handle, second trader joins, ladder lists it", async ({ page, request }, testInfo) => {
   test.slow();
   await demoSession(page, LEADER);
-  await page.goto("/create-clan");
-  await page.getByLabel("Clan name").fill(`Night Shift ${tag}`);
+  await page.goto("/create-trench");
+  await page.getByLabel("Trench name").fill(`Night Shift ${tag}`);
   await page.getByLabel("Tag (3–5 letters)").fill(tag);
   await page.getByLabel("Description").fill("e2e clan");
-  await page.getByRole("button", { name: "Create clan" }).click();
-  await page.waitForURL(new RegExp(`/c/${tag}$`), { timeout: 120_000 });
+  await page.getByRole("button", { name: "Create Trench" }).click();
+  await page.waitForURL(new RegExp(`/trench/${tag}$`), { timeout: 120_000 });
   await expect(page.getByRole("heading", { level: 1, name: `Night Shift ${tag}` })).toBeVisible();
-  await expect(page.getByText("You're in this clan.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Create clan battle" })).toBeVisible();
+  await expect(page.getByText("You're in this Trench.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Create Trench battle" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("clan-page.png"), fullPage: true });
 
   const me = await request.get("/api/me/clan", { headers: demoHeaders(LEADER) });
@@ -57,7 +57,7 @@ test("create a clan, claim a handle, second trader joins, ladder lists it", asyn
   expect(again.status()).toBe(409);
   expect(((await again.json()) as { error: string }).error).toBe(`You're already in [${tag}].`);
 
-  await page.goto("/clans");
+  await page.goto("/trenches");
   await expect(page.getByRole("link", { name: new RegExp(`\\[${tag}\\] Night Shift`) })).toBeVisible({ timeout: 60_000 });
 });
 
@@ -101,7 +101,7 @@ test("leader creates a clan battle; a non-member cannot join; members can", asyn
 test("clan battle page shows [TAG] handle · title; fast-forward settles and the ladder moves", async ({ page, request }, testInfo) => {
   test.slow();
   await page.goto(`/t/${battleSlug}`);
-  await expect(page.getByRole("link", { name: `Clan battle [${tag}]` })).toBeVisible();
+  await expect(page.getByRole("link", { name: `Trench battle [${tag}]` })).toBeVisible();
   const leaderRow = page.getByRole("row").filter({ hasText: `[${tag}] lead_${tag.toLowerCase()}` });
   await expect(leaderRow).toBeVisible({ timeout: 60_000 });
   await expect(leaderRow).toContainText("Recruit");
@@ -122,7 +122,7 @@ test("clan battle page shows [TAG] handle · title; fast-forward settles and the
       { timeout: 90_000 },
     )
     .toBeGreaterThanOrEqual(2); // leader + member finished 1st and 2nd → two podiums → +40 score
-  await page.goto("/clans");
+  await page.goto("/trenches");
   const row = page.getByRole("row").filter({ hasText: `[${tag}]` });
   await expect(row).toContainText(/\d+\.\d/);
   await page.screenshot({ path: testInfo.outputPath("ladder.png"), fullPage: true });

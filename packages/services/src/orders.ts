@@ -74,7 +74,7 @@ export async function quoteOrder(trenchId: string, trader: Address, raw: unknown
   const gate = canTrade(trench);
   if (!gate.ok) throw new ServiceError(409, gate.reason);
   const entrants = await listEntryAddresses(trenchId);
-  if (!entrants.some((a) => a.toLowerCase() === trader.toLowerCase())) throw forbidden("Join the Trench before trading.");
+  if (!entrants.some((a) => a.toLowerCase() === trader.toLowerCase())) throw forbidden("Join the battle before trading.");
   const allowed = trench.allowedAssets.find((a) => a.address.toLowerCase() === input.asset.toLowerCase());
   if (!allowed) throw badRequest(`${symbolFor(input.asset)} isn't an allowed asset in this Trench.`, "asset");
   if (input.side === "buy" && Number(input.amount) < MIN_ORDER_USDC) throw badRequest(`Minimum order is ${MIN_ORDER_USDC} USDC.`, "amount");

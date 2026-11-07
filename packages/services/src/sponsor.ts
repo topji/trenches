@@ -37,7 +37,7 @@ export async function sponsorTrench(trenchId: string, sponsor: Address, raw: unk
   const input = parsed.data;
   const row = await getTrenchRow(trenchId);
   if (!row) throw notFound();
-  if (row.status !== "draft" && row.status !== "funded") throw conflict("This Trench can no longer be sponsored.");
+  if (row.status !== "draft" && row.status !== "funded") throw conflict("This battle can no longer be sponsored.");
   const trench = rowToTrench(row);
 
   const fundingTxId = await fundFromOperator(hedera, config.prizeTokenId, trench.hedera.escrowAccountId, toBaseUnits(input.amountUsdc), `trenches sponsor ${trench.slug}`);
@@ -60,7 +60,7 @@ export async function sponsorTrench(trenchId: string, sponsor: Address, raw: unk
     })
     .where(and(eq(trenches.id, trenchId), eq(trenches.status, row.status)))
     .returning();
-  if (!claimed) throw conflict("This Trench changed while you were funding it. Reload and try again.");
+  if (!claimed) throw conflict("This battle changed while you were funding it. Reload and try again.");
   const updated = rowToTrench(claimed);
 
   const sponsorship: Sponsorship = { trenchId, sponsor: sponsorInfo.address, name: input.name, ...(input.logoUrl ? { logoUrl: input.logoUrl } : {}), amountUsdc: input.amountUsdc, fundingTxId };
@@ -97,8 +97,8 @@ export async function decideProposal(trenchId: string, admin: Address, accept: b
   const row = await getTrenchRow(trenchId);
   if (!row) throw notFound();
   if (row.adminAddress !== admin.toLowerCase()) throw forbidden();
-  if (!row.pendingAsset) throw new ServiceError(409, "Nothing is pending on this Trench.");
-  if (row.status === "ended" || row.status === "settled") throw conflict("This Trench has ended.");
+  if (!row.pendingAsset) throw new ServiceError(409, "Nothing is pending on this battle.");
+  if (row.status === "ended" || row.status === "settled") throw conflict("This battle has ended.");
   const nowIso = new Date().toISOString();
   const nextAssets: AllowedAsset[] = accept ? [{ chainId: row.pendingAsset.chainId, address: row.pendingAsset.address, symbol: row.pendingAsset.symbol }] : row.allowedAssets;
   const [updatedRow] = await db

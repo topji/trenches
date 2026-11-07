@@ -24,11 +24,11 @@ export function isEndingSoon(t: Pick<Trench, "endAt">, now: Date = new Date()): 
 
 export function canJoin(t: Pick<Trench, "status" | "startAt" | "endAt">, now = new Date()): { ok: true } | { ok: false; reason: string } {
   const s = deriveStatus(t, now);
-  if (s === "draft") return { ok: false, reason: "This Trench hasn't been funded yet." };
-  if (s === "ended" || s === "settled") return { ok: false, reason: "This Trench has ended." };
+  if (s === "draft") return { ok: false, reason: "This battle hasn't been funded yet." };
+  if (s === "ended" || s === "settled") return { ok: false, reason: "This battle has ended." };
   return { ok: true };
 }
 
 export function canTrade(t: Pick<Trench, "status" | "startAt" | "endAt">, now = new Date()): { ok: true } | { ok: false; reason: string } {
-  return deriveStatus(t, now) === "live" ? { ok: true } : { ok: false, reason: "This Trench isn't live." };
+  return deriveStatus(t, now) === "live" ? { ok: true } : { ok: false, reason: "This battle isn't live." };
 }

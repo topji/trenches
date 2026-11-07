@@ -53,7 +53,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ addres
         </dl>
       </header>
       {view.results.length === 0 ? (
-        <EmptyState action={<ButtonLink href="/trenches" size="sm">{copy.cta.browse}</ButtonLink>}>{copy.profile.empty}</EmptyState>
+        <EmptyState action={<ButtonLink href="/battles" size="sm">{copy.cta.browse}</ButtonLink>}>{copy.profile.empty}</EmptyState>
       ) : (
         <table className="w-full border-t border-line">
           <thead>

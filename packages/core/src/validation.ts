@@ -52,7 +52,7 @@ export function createTrenchSchema(opts: CreateTrenchOptions = {}) {
         ctx.addIssue({
           code: "custom",
           path: ["endAt"],
-          message: `A Trench must run for at least ${minDuration / 60000} minutes.`,
+          message: `A battle must run for at least ${minDuration / 60000} minutes.`,
         });
       }
       if (!opts.demoMode && start < now.getTime() + MIN_LEAD_MS) {

@@ -4,10 +4,10 @@
 
 **Reads happen in server components, straight from the SDK.** Discovery (`/trenches`), the Trench page (`/t/[slug]`), the public leaderboard route, the profile (`/u/[address]`) and the clan ladder (`/clans`) call `createPublicClient().select()`; Postgres is consulted only while an Arkiv write is pending, and the page says so.
 
-**Leaderboard rewrites are one transaction.** `upsertLeaderboard` diffs the existing `trenches.lb` rows against the new ranking and sends creates, patches and deletes in a single `executeBatch` — one tx per recompute, only when something moved. Same pattern for the clan ladder (`upsertClanScores`).
+**Leaderboard rewrites are one transaction.** `upsertLeaderboard` diffs the existing `trenches.lb` rows against the new ranking and sends creates, patches and deletes in a single `executeBatch` — one tx per recompute, only when something moved. Same pattern for the Trench ladder (`upsertClanScores`).
 
 **Ownership.** One backend writer wallet owns every entity; entries, profiles and sponsorships are tagged with the trader or sponsor address. Per-wallet ownership (the trader signing their own `entry` from Privy) was the stretch goal and did not make the cut; documented here rather than claimed.
 
-**Expiry.** Trench-scoped entities expire 30 days after the Trench ends (converted to blocks at 2 s, capped at the chain maximum); profiles, payouts and clans one year.
+**Expiry.** Trench-scoped entities expire 30 days after the Trench ends (converted to blocks at 2 s, capped at the chain maximum); profiles, payouts and Trenches one year.
 
-**Numbers from the build (Nov 6–7).** ~60 Trenches, ~90 entries, ~70 `lb` rows, 12 payouts, 20+ profiles, 6 clans written during development and test runs; every e2e spec writes real entities and reads them back.
+**Numbers from the build (Nov 6–7).** ~60 Trenches, ~90 entries, ~70 `lb` rows, 12 payouts, 20+ profiles, 6 Trenches written during development and test runs; every e2e spec writes real entities and reads them back.

@@ -53,7 +53,7 @@ export function IdentityCard({ address, identity, nextXp, progress }: { address:
             {identity?.tag && (
               <>
                 {" · "}
-                <Link href={`/c/${identity.tag}`} className="font-mono">[{identity.tag}]</Link>
+                <Link href={`/trench/${identity.tag}`} className="font-mono">[{identity.tag}]</Link>
               </>
             )}
           </div>

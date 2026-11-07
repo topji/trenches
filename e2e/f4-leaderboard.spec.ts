@@ -26,7 +26,7 @@ test("F4.1 logged out: the board renders from the Arkiv query with real P&L", as
   await expect(row).toBeVisible();
   await expect(row).toContainText(/[+−]\$\d/); // signed P&L with explicit sign
   await expect(row.getByLabel("Verified unique human (World ID)")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Join this Trench" })).toBeVisible(); // logged out: no "You" tag
+  await expect(page.getByRole("button", { name: "Join this battle" })).toBeVisible(); // logged out: no "You" tag
   await expect(row.getByText("You")).toHaveCount(0);
 });
 

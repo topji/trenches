@@ -43,6 +43,13 @@
       "when": 1794011951151,
       "tag": "0005_stiff_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794012936475,
+      "tag": "0006_flaky_diamondback",
+      "breakpoints": true
     }
   ]
 }

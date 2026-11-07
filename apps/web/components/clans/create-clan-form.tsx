@@ -38,7 +38,7 @@ export function CreateClanForm() {
         else setFormError(body.error ?? "Couldn't create the clan.");
         return;
       }
-      router.push(`/c/${body.tag}`);
+      router.push(`/trench/${body.tag}`);
     } catch {
       setFormError("Couldn't reach the server. Try again.");
     } finally {

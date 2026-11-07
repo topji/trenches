@@ -27,8 +27,8 @@ test.beforeAll(async ({ request }) => {
 
 test("F8 discovery: funded + live from Arkiv, chips by status and asset, drafts hidden, ended behind its chip", async ({ page, request }) => {
   await waitForStatus(request, funded.id, "funded");
-  await page.goto("/trenches");
-  await expect(page.getByRole("heading", { name: "Live and upcoming Trenches" })).toBeVisible();
+  await page.goto("/battles");
+  await expect(page.getByRole("heading", { name: "Live and upcoming battles" })).toBeVisible();
   const row = page.getByRole("link").filter({ hasText: fundedName });
   await expect(row).toBeVisible();
   await expect(row).toContainText(/1 entrant/);
@@ -93,7 +93,7 @@ test("F6 dashboard: both Trenches with status, entrants, volume, fees, links; Sh
   await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => undefined);
   await demoSession(page, HOST);
   await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "Your Trenches" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your battles" })).toBeVisible();
   const r1 = page.getByRole("row").filter({ hasText: fundedName });
   const r2 = page.getByRole("row").filter({ hasText: draftName });
   await expect(r1).toBeVisible({ timeout: 60_000 });
@@ -117,12 +117,12 @@ test("F7 profile: real results from Arkiv with the human badge; empty state for 
   await page.goto(`/u/${TRADER}`);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("0xd3ad…d00c");
   await expect(page.getByLabel("Verified unique human (World ID)").first()).toBeVisible();
-  await expect(page.getByText("Trenches joined")).toBeVisible();
+  await expect(page.getByText("Battles joined")).toBeVisible();
   await expect(page.getByText("Best finish")).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: "Flash gate Trench" })).toContainText("#1");
   await page.screenshot({ path: testInfo.outputPath("profile.png"), fullPage: true });
 
   await page.goto(`/u/${NOBODY}`);
-  await expect(page.getByText("No Trenches yet.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Browse Trenches" })).toBeVisible();
+  await expect(page.getByText("No battles yet.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Browse battles" })).toBeVisible();
 });

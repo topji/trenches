@@ -32,7 +32,7 @@ export function TrenchHeader({ trench, entrants, paidAt, clanTag }: { trench: Tr
         </p>
         <p className="text-muted mt-1">
           {trench.clanId ? (
-            <Link href={clanTag ? `/c/${clanTag}` : "/clans"} className="text-text">{copy.clans.clanBattle}{clanTag ? ` [${clanTag}]` : ""}</Link>
+            <Link href={clanTag ? `/trench/${clanTag}` : "/trenches"} className="text-text">{copy.clans.clanBattle}{clanTag ? ` [${clanTag}]` : ""}</Link>
           ) : (
             copy.clans.worldBattle
           )}

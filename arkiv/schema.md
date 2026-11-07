@@ -26,7 +26,7 @@ select().from(LeaderboardSchema).where(eq("trader", addr(a))).ownedBy(writer).or
 select().from(ProfileSchema).where(eq("address", addr(a))).ownedBy(writer).limit(1)
 // 4. Payouts
 select().from(PayoutSchema).where(eq("trenchId", id)).ownedBy(writer).orderBy(asc("rank"))
-// 5. Clan ladder
+// 5. Trench ladder
 select().from(ClanScoreSchema).where(eq("season","2026-11")).ownedBy(writer).orderBy(asc("rank"))
 ```
 
