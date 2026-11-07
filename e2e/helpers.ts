@@ -1,4 +1,5 @@
 import type { APIRequestContext, Page } from "@playwright/test";
+import { buildMockIdKitResult, joinSignal } from "../packages/worldid/src/client";
 
 /** Demo session (DEMO_MODE only): the browser sends these headers; the server accepts them only with DEMO_SECRET. */
 export const DEMO_SECRET = process.env.DEMO_SECRET ?? "";
@@ -68,4 +69,14 @@ export async function waitForStatus(request: APIRequestContext, id: string, stat
     await new Promise((r) => setTimeout(r, 3000));
   }
   throw new Error(`Trench ${id} is "${last}", expected "${status}" within ${timeoutMs} ms`);
+}
+
+/** Join through the API with a mocked proof (WORLD_MOCK): rp-context → mock result → POST join. */
+export async function joinViaApi(request: APIRequestContext, trenchId: string, trader: string, identity = trader): Promise<void> {
+  const rp = await request.get(`/api/world/rp-context?trenchId=${trenchId}`);
+  if (!rp.ok()) throw new Error(`rp-context failed: ${rp.status()}`);
+  const ctx = (await rp.json()) as { rp_context: { nonce: string }; action: string; environment: string };
+  const result = buildMockIdKitResult({ nonce: ctx.rp_context.nonce, action: ctx.action, environment: ctx.environment, signal: joinSignal(trenchId, trader), identity });
+  const res = await request.post(`/api/trenches/${trenchId}/join`, { headers: demoHeaders(trader), data: { result } });
+  if (!res.ok()) throw new Error(`join failed: ${res.status()} ${await res.text()}`);
 }

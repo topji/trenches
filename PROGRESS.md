@@ -1,5 +1,29 @@
 # PROGRESS.md — newest first
 
+## Sat 7 Nov 2026, 06:40 IST — Step 7 done: settlement and payout on Hedera (F5), Bracket orders
+
+**Works (live, testnet + Base)**
+- `packages/services/src/settlement.ts` `settleTrench`: claims the ended Trench (`settlement_started_at`), recomputes once, posts HCS `leaderboard.final`, splits the pool with `splitPrize` (6 dp exact, remainder and unfilled places → rank 1), resolves each winner's Hedera account, pays from the Trench's own escrow in one HTS `TransferTransaction` signed with the decrypted escrow key, posts `trench.paid`, writes `trenches.payout` entities on Arkiv, patches the Trench to `settled` with `payoutTxId` / `scheduleId`.
+- Host fee share: the sum of `fee_ledger.admin_usd` is paid treasury → admin account `0.0.11337182` by a **HIP-423 Scheduled Transaction** created at settlement with `expirationTime = now + 3 min` and `waitForExpiry = true`; the network executes it on its own, recipient fixed at creation, no Solidity. HCS `fee_share.scheduled`. Amount is only known at settlement, which is why it is created then (DECISIONS.md fallback wording honoured: the mechanism actually used is stated).
+- Worker `settleTrenches` every 60 s; `POST /api/dev/fast-forward` (DEMO_MODE + DEMO_SECRET) ends a Trench now and settles it immediately.
+- Trench page settled state: countdown reads "Settled · paid HH:MM IST", a Payouts table (rank, trader, amount, HashScan tx per winner), escrow line adds the payout tx and the fee-share schedule links, leaderboard headed "Final results"; Mirror Node escrow balance goes 1.00 → 0.00 (F5.3).
+- Bracket orders: ticket type Bracket (buy entry + stop loss + take profit, defaults ±3 % of the quote price); the quote returns the attached bracket's own typed data (`salt`, `deadline`, `signedMaxFromAmount`), the client signs both payloads, submit re-sends `attachedBracket` with its signature (docs/integrations/flash.md §3.3). Live bracket quote verified in `e2e/f3-orders.spec.ts`.
+- `e2e/f5-settlement.spec.ts` green (mobile): two entrants (UI + API join), fast-forward → `ended` true, `payoutTxId`, `leaderboard.final` + `trench.paid` on HCS, payout entities tx, winners [0.70, 0.30] of a 1.00 pool (rank 1 gets 50 + the unfilled 20), escrow 1.00 → 0.00 on the Mirror Node, settled page with both payout rows. F5.4: zero `.sol` files, zero `pragma solidity`.
+  - e2e payout tx: https://hashscan.io/testnet/transaction/0.0.11330265-1794009485-617069933
+- **Live settlement of the Flash gate Trench** (`/t/flash-gate-trench-1syb`, real P&L from the builder's Flash fills): payout tx https://hashscan.io/testnet/transaction/0.0.11330265-1794009690-444552754 (10 TRENCH-USDC → winner account 0.0.11347290), `leaderboard.final` https://hashscan.io/testnet/transaction/0.0.11330265-1794009681-567134987, `trench.paid` https://hashscan.io/testnet/transaction/0.0.11330265-1794009692-552435577, payout entities https://rabdi.explorer.arkiv.network/tx/0xe36931913e6f3f814aa4cb6d50fde7d99899e291c9ac2b0471cc240c1163aaa3, fee-share schedule 0.0.11347292 (0.010421 TRENCH-USDC, executes 3 min after creation) https://hashscan.io/testnet/schedule/0.0.11347292. **Executed by the network on its own at expiry** (Mirror `executed_timestamp` 1794009860.04 = 2026-11-07T00:04:20Z, 3 min after creation; the step 2 smoke schedule 0.0.11337186 also executed at its expiry). Winner account https://hashscan.io/testnet/account/0.0.11347290 holds 10.000000 TRENCH-USDC (Mirror).
+- The fast-forward ended the Trench but the worker's `settleTrenches` tick claimed the settlement first while the route was still patching Arkiv — the claim worked as designed (one payout, no double spend); the route reports `settlement: null` in that case.
+
+**Decisions made**
+- Winners' Hedera accounts: `DEMO_WINNER_ACCOUNTS` if present, else a stored `winner_accounts` row, else the platform creates an account per trader (0.5 ℏ, unlimited auto-association, key encrypted like escrow keys). Stated as a hackathon trust assumption; production collects a Hedera account at join.
+- Every ranked entrant is eligible for a place, fills or not: "the board settles it", and a Trench nobody traded still pays per rank rather than stranding the pool.
+- Settlement claims the Trench first; if anything throws before the transfer, the claim is released for the next tick; after a payout it stays claimed, so a Trench can never be paid twice.
+- Ended Trenches keep recomputing until settled; settlement recomputes once more so the final board marks at ≈ endAt.
+
+**Doesn't work yet**
+- Dashboard, profile, discovery filters, sponsor flow, Limit / TWAP, OG card (step 8).
+
+**Next:** step 8 on command.
+
 ## Sat 7 Nov 2026, 05:45 IST — Step 6 done: live leaderboard on Arkiv (F4)
 
 **Works (live)**

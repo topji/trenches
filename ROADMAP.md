@@ -126,6 +126,8 @@ Deliverables
 Done when: F5.1–F5.4 pass; `grep -r "pragma solidity"` is empty.
 Needs from the builder: `DEMO_WINNER_ACCOUNTS` map and an admin Hedera account associated with the prize token.
 
+Outcome (Sat 7 Nov, 06:40): done. `e2e/f5-settlement.spec.ts` green; the Flash gate Trench settled live with a real payout and a HIP-423 fee-share schedule. Winner accounts are created by the platform when the env map is empty.
+
 ## Step 8 — Dashboard, profile, discovery, sponsor (F6–F9) + Limit, TWAP, share card
 **Goal:** all nine features present.
 

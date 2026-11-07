@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createTrenchViaApi, demoHeaders, demoSession, waitForStatus, type CreatedTrench } from "./helpers";
+import { createTrenchViaApi, demoHeaders, demoSession, joinViaApi, waitForStatus, type CreatedTrench } from "./helpers";
 
 /**
  * F5 Prize escrow and payout. A fresh Trench with two entrants is fast-forwarded (DEMO_MODE) and settled:
@@ -29,13 +29,10 @@ async function join(page: import("@playwright/test").Page, who: string, slug: st
   await expect(page.getByText("You're in. Place your first order.")).toBeVisible({ timeout: 120_000 });
 }
 
-test("F5.1 fast-forward settles: final HCS, escrow pays winners per split, payout entities, settled page", async ({ browser, page, request }, testInfo) => {
+test("F5.1 fast-forward settles: final HCS, escrow pays winners per split, payout entities, settled page", async ({ page, request }, testInfo) => {
   test.slow();
-  await join(page, A, t.slug);
-  const ctxB = await browser.newContext();
-  const pageB = await ctxB.newPage();
-  await join(pageB, B, t.slug);
-  await ctxB.close();
+  await join(page, A, t.slug); // through the UI
+  await joinViaApi(request, t.id, B); // through the API (same server path)
 
   const ff = await request.post("/api/dev/fast-forward", { headers: demoHeaders(ADMIN), data: { trenchId: t.id } });
   expect(ff.ok()).toBe(true);
@@ -75,6 +72,7 @@ test("F5.4 no Solidity anywhere in the repo", async () => {
   const { execSync } = await import("node:child_process");
   const sol = execSync("find . -name '*.sol' -not -path '*/node_modules/*' | wc -l").toString().trim();
   expect(sol).toBe("0");
-  const pragma = execSync("grep -rl 'pragma solidity' --include='*.ts' --include='*.tsx' --include='*.js' . --exclude-dir=node_modules --exclude-dir=.next || true").toString().trim();
+  const needle = ["pragma", "solidity"].join(" "); // not spelled out, or this file would match itself
+  const pragma = execSync(`grep -rl '${needle}' --include='*.ts' --include='*.tsx' --include='*.js' . --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=e2e || true`).toString().trim();
   expect(pragma).toBe("");
 });
