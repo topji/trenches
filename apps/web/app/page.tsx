@@ -2,7 +2,7 @@ import Link from "next/link";
 import { clsx } from "clsx";
 import { seasonLabel, seasonOf } from "@trenches/core";
 import { arkivReader, ladder, services } from "@trenches/services";
-import { entries, fills, payouts, sql, trenches } from "@trenches/db";
+import { entries, fills, sql, trenches } from "@trenches/db";
 import { copy } from "@/lib/copy";
 import { formatCompactUsd, formatShortDuration, formatUsd } from "@/lib/format";
 import { pillFor } from "@/lib/trench-view";
@@ -22,7 +22,7 @@ async function stats() {
     const [b] = await db.select({ n: sql<number>`count(*)::int` }).from(trenches);
     const [h] = await db.select({ n: sql<number>`count(distinct ${entries.trader})::int` }).from(entries);
     const [v] = await db.select({ v: sql<string>`coalesce(sum(${fills.qty} * ${fills.priceUsd}), 0)` }).from(fills);
-    const [p] = await db.select({ p: sql<string>`coalesce(sum(${payouts.amountUsdc}), 0)` }).from(payouts);
+    const [p] = await db.select({ p: sql<string>`coalesce(sum(${trenches.prizePoolUsdc}), 0)` }).from(trenches).where(sql`${trenches.status} = 'settled' and ${trenches.payoutTxId} is not null`);
     return { seasons: b?.n ?? 0, humans: h?.n ?? 0, volume: Number(v?.v ?? 0), paid: Number(p?.p ?? 0) };
   } catch {
     return null;
