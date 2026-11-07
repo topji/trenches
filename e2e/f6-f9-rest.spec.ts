@@ -10,14 +10,18 @@ const NOBODY = "0x0000000000000000000000000000000000000001";
 
 let funded: CreatedTrench;
 let draft: CreatedTrench;
+let fundedName = "";
+let draftName = "";
 
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ request }) => {
   test.setTimeout(480_000);
   const tag = Date.now().toString(36);
-  funded = await createTrenchViaApi(request, HOST, { name: `F6 funded ${tag}`, startInMs: 20 * 60_000, durationMs: 30 * 60_000, fund: true });
-  draft = await createTrenchViaApi(request, HOST, { name: `F9 draft ${tag}`, startInMs: 20 * 60_000, durationMs: 30 * 60_000, fund: false });
+  fundedName = `F6 funded ${tag}`;
+  draftName = `F9 draft ${tag}`;
+  funded = await createTrenchViaApi(request, HOST, { name: fundedName, startInMs: 20 * 60_000, durationMs: 30 * 60_000, fund: true });
+  draft = await createTrenchViaApi(request, HOST, { name: draftName, startInMs: 20 * 60_000, durationMs: 30 * 60_000, fund: false });
   await joinViaApi(request, funded.id, TRADER);
 });
 
@@ -25,28 +29,33 @@ test("F8 discovery: funded + live from Arkiv, chips by status and asset, drafts 
   await waitForStatus(request, funded.id, "funded");
   await page.goto("/trenches");
   await expect(page.getByRole("heading", { name: "Live and upcoming Trenches" })).toBeVisible();
-  const row = page.getByRole("link", { name: new RegExp(funded.slug.split("-")[0]!, "i") }).filter({ hasText: "F6 funded" });
-  await expect(row.first()).toBeVisible();
-  await expect(row.first()).toContainText(/1 entrant/);
-  await expect(row.first()).toContainText(/starts in/);
-  await expect(page.getByText("F9 draft")).toHaveCount(0); // F8.2 drafts never listed
-  await page.getByRole("link", { name: "Upcoming" }).click();
-  await expect(page.getByText("F6 funded")).toBeVisible();
-  await page.getByRole("link", { name: "Live" }).click();
-  await expect(page.getByText("F6 funded")).toHaveCount(0);
-  await page.getByRole("link", { name: "Ended" }).click();
+  const row = page.getByRole("link").filter({ hasText: fundedName });
+  await expect(row).toBeVisible();
+  await expect(row).toContainText(/1 entrant/);
+  await expect(row).toContainText(/starts in/);
+  await expect(page.getByText(draftName)).toHaveCount(0); // F8.2 drafts never listed
+  const chips = page.getByRole("navigation", { name: "Filters" });
+  await chips.getByRole("link", { name: "Upcoming", exact: true }).click();
+  await expect(page).toHaveURL(/status=upcoming/);
+  await expect(page.getByText(fundedName)).toBeVisible();
+  await chips.getByRole("link", { name: "Live", exact: true }).click();
+  await expect(page).toHaveURL(/status=live/);
+  await expect(page.getByText(fundedName)).toHaveCount(0);
+  await chips.getByRole("link", { name: "Ended", exact: true }).click();
+  await expect(page).toHaveURL(/status=ended/);
   await expect(page.getByText("Flash gate Trench")).toBeVisible(); // settled, only under Ended
-  await page.getByRole("link", { name: "All" }).click();
-  await page.getByRole("link", { name: "WETH", exact: true }).click();
-  await expect(page.getByText("F6 funded")).toBeVisible();
-  await expect(page).toHaveURL(/asset=WETH/);
+  await chips.getByRole("link", { name: "All", exact: true }).click();
+  await expect(page).toHaveURL(/\/trenches$/);
+  await chips.getByRole("link", { name: "WETH", exact: true }).click();
+  await expect(page).toHaveURL(/\/trenches\?asset=WETH$/);
+  await expect(page.getByText(fundedName)).toBeVisible({ timeout: 60_000 });
 });
 
 test("F9.1 sponsor funds a draft Trench and proposes an asset; F9.2 host accepts", async ({ page, request }, testInfo) => {
   test.slow();
   await demoSession(page, SPONSOR);
   await page.goto(`/sponsor/${draft.slug}`);
-  await expect(page.getByRole("heading", { name: /^Sponsor F9 draft/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: `Sponsor ${draftName}` })).toBeVisible();
   await page.getByLabel("Sponsor name").fill("Zolt Labs");
   await page.getByLabel("Logo (URL)").fill("https://example.com/logo.png");
   await page.getByLabel("Amount (USDC)").fill("2");
@@ -84,8 +93,8 @@ test("F6 dashboard: both Trenches with status, entrants, volume, fees, links; Sh
   await demoSession(page, HOST);
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Your Trenches" })).toBeVisible();
-  const r1 = page.getByRole("row").filter({ hasText: "F6 funded" });
-  const r2 = page.getByRole("row").filter({ hasText: "F9 draft" });
+  const r1 = page.getByRole("row").filter({ hasText: fundedName });
+  const r2 = page.getByRole("row").filter({ hasText: draftName });
   await expect(r1).toBeVisible({ timeout: 60_000 });
   await expect(r2).toBeVisible();
   await expect(r1).toContainText("Upcoming");

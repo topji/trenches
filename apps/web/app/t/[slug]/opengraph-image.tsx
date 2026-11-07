@@ -28,35 +28,35 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const rankColor = [T.accent, T.rank2, T.rank3];
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", background: T.bg, color: T.text, display: "flex", flexDirection: "column", padding: 64, fontFamily: "sans-serif" }}>
+      <div style={{ display: "flex", width: "100%", height: "100%", background: T.bg, color: T.text, flexDirection: "column", padding: 64, fontFamily: "sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 28, color: T.muted }}>Trenches{trench?.sponsor ? ` · Prize pool by ${trench.sponsor.name}` : ""}</div>
-            <div style={{ fontSize: 64, fontWeight: 800, letterSpacing: -1, marginTop: 8 }}>{trench?.name ?? "Trench not found"}</div>
+            <div style={{ display: "flex", fontSize: 28, color: T.muted }}>{`Trenches${trench?.sponsor ? ` · Prize pool by ${trench.sponsor.name}` : ""}`}</div>
+            <div style={{ display: "flex", fontSize: 64, fontWeight: 800, letterSpacing: -1, marginTop: 8 }}>{trench?.name ?? "Trench not found"}</div>
           </div>
           {trench && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <div style={{ fontSize: 24, color: T.muted }}>Pool</div>
-              <div style={{ fontSize: 56, fontWeight: 800, color: T.accent }}>${trench.prizePoolUsdc.toFixed(2)}</div>
+              <div style={{ display: "flex", fontSize: 24, color: T.muted }}>Pool</div>
+              <div style={{ display: "flex", fontSize: 56, fontWeight: 800, color: T.accent }}>{`$${trench.prizePoolUsdc.toFixed(2)}`}</div>
             </div>
           )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginTop: 40, borderTop: `2px solid ${T.line}` }}>
           {top.length === 0 ? (
-            <div style={{ fontSize: 32, color: T.muted, padding: "32px 0" }}>No entrants yet. Be the first to join.</div>
+            <div style={{ display: "flex", fontSize: 32, color: T.muted, padding: "32px 0" }}>No entrants yet. Be the first to join.</div>
           ) : (
             top.map((r, i) => (
               <div key={r.trader} style={{ display: "flex", alignItems: "center", height: 88, borderBottom: `2px solid ${T.line}`, fontSize: 40 }}>
-                <div style={{ width: 80, fontWeight: 800, color: rankColor[i] }}>{r.rank}</div>
-                <div style={{ flex: 1, fontFamily: "monospace", fontSize: 34 }}>{short(r.trader)}</div>
-                <div style={{ fontWeight: 800, color: r.pnlUsd > 0 ? T.gain : r.pnlUsd < 0 ? T.loss : T.text }}>{pnl(r.pnlUsd)}</div>
+                <div style={{ display: "flex", width: 80, fontWeight: 800, color: rankColor[i] }}>{r.rank}</div>
+                <div style={{ display: "flex", flex: 1, fontFamily: "monospace", fontSize: 34 }}>{short(r.trader)}</div>
+                <div style={{ display: "flex", fontWeight: 800, color: r.pnlUsd > 0 ? T.gain : r.pnlUsd < 0 ? T.loss : T.text }}>{pnl(r.pnlUsd)}</div>
               </div>
             ))
           )}
         </div>
         <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", fontSize: 26, color: T.muted }}>
-          <div>{trench ? `${trench.allowedAssets.map((a) => a.symbol).join(", ")} · ${trench.prizeSplit.join("/")}` : ""}</div>
-          <div>{site}/t/{slug}</div>
+          <div style={{ display: "flex" }}>{trench ? `${trench.allowedAssets.map((a) => a.symbol).join(", ")} · ${trench.prizeSplit.join("/")}` : " "}</div>
+          <div style={{ display: "flex" }}>{`${site}/t/${slug}`}</div>
         </div>
       </div>
     ),
