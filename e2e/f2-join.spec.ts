@@ -27,7 +27,7 @@ test.beforeAll(async ({ request }) => {
 test("F2.1 success: verified human appears on the board at $0.00 with the badge", async ({ page, request }, testInfo) => {
   await demoSession(page, TRADER_A);
   await page.goto(`/t/${open.slug}`);
-  await page.getByRole("button", { name: "Join this battle" }).click();
+  await page.getByRole("button", { name: "Join this season" }).click();
   await expect(page.getByRole("dialog")).toBeVisible({ timeout: 60_000 });
   await page.screenshot({ path: testInfo.outputPath("mock-sheet.png"), fullPage: true });
   await page.getByRole("button", { name: "Verify as human" }).click();
@@ -54,11 +54,11 @@ test("F2.2 cancel: closing the mock widget sends nothing and keeps the Join butt
     void route.continue();
   });
   await page.goto(`/t/${open.slug}`);
-  await page.getByRole("button", { name: "Join this battle" }).click();
+  await page.getByRole("button", { name: "Join this season" }).click();
   await expect(page.getByRole("dialog")).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByText("Verification cancelled. Join when you're ready.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Join this battle" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Join this season" })).toBeEnabled();
   expect(joinPosts).toBe(0);
 });
 
@@ -70,10 +70,10 @@ test("F2.3 invalid proof: server answers 401 and the UI says so", async ({ page,
     void route.continue({ postData: JSON.stringify(body) });
   });
   await page.goto(`/t/${open.slug}`);
-  await page.getByRole("button", { name: "Join this battle" }).click();
+  await page.getByRole("button", { name: "Join this season" }).click();
   await page.getByRole("button", { name: "Verify as human" }).click({ timeout: 60_000 });
   await expect(page.getByText("Verification failed. Try again.")).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByRole("button", { name: "Join this battle" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Join this season" })).toBeEnabled();
 
   const direct = await request.post(`/api/trenches/${open.id}/join`, { headers: demoHeaders(TRADER_B), data: { result: { nope: true } } });
   expect(direct.status()).toBe(401);
@@ -87,10 +87,10 @@ test("F2.3 invalid proof: server answers 401 and the UI says so", async ({ page,
 test("F2.4 duplicate: the same human (nullifier) cannot enter twice", async ({ page, request }) => {
   await demoSession(page, TRADER_C);
   await page.goto(`/t/${open.slug}`);
-  await page.getByRole("button", { name: "Join this battle" }).click();
+  await page.getByRole("button", { name: "Join this season" }).click();
   await page.getByLabel("Mock identity").fill(TRADER_A, { timeout: 60_000 }); // same mock human as F2.1, different wallet
   await page.getByRole("button", { name: "Verify as human" }).click();
-  await expect(page.getByText("You've already entered this battle.")).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("You've already entered this season.")).toBeVisible({ timeout: 60_000 });
 
   const again = await request.post(`/api/trenches/${open.id}/join`, { headers: demoHeaders(TRADER_A), data: { result: {} } });
   expect(again.status()).toBe(409);
@@ -99,9 +99,9 @@ test("F2.4 duplicate: the same human (nullifier) cannot enter twice", async ({ p
 test("F2.5 join is disabled with the reason on draft and ended Trenches", async ({ page }) => {
   await demoSession(page, TRADER_B);
   await page.goto(`/t/${draft.slug}`);
-  await expect(page.getByRole("button", { name: "Join this battle" })).toBeDisabled();
-  await expect(page.getByText("This battle hasn't been funded yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Join this season" })).toBeDisabled();
+  await expect(page.getByText("This season hasn't been funded yet.")).toBeVisible();
   await page.goto(`/t/${ended.slug}`);
-  await expect(page.getByRole("button", { name: "Join this battle" })).toBeDisabled();
-  await expect(page.getByText("This battle has ended.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Join this season" })).toBeDisabled();
+  await expect(page.getByText("This season has ended.")).toBeVisible();
 });

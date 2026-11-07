@@ -1,20 +1,17 @@
 import Link from "next/link";
 import { copy } from "@/lib/copy";
 import { WalletButton } from "@/components/auth/wallet-button";
+import { NavLinks } from "./nav-links";
 
 export function Nav() {
   return (
-    <header className="border-b border-line">
-      <div className="w-full max-w-content px-4 h-14 flex items-center gap-6">
-        <Link href="/" className="font-extrabold text-[18px] tracking-[-0.01em] hover:no-underline">
+    <header className="sticky top-0 z-40 border-b border-line nav-blur">
+      <div className="w-full max-w-content mx-auto px-4 h-14 flex items-center gap-4 lg:gap-8">
+        <Link href="/" className="font-extrabold text-[20px] tracking-[-0.02em] hover:no-underline inline-flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-pill bg-accent" aria-hidden />
           {copy.app.name}
         </Link>
-        <nav className="flex items-center gap-4 text-small text-muted" aria-label="Primary">
-          <Link href="/battles" className="hover:text-text">{copy.nav.trenches}</Link>
-          <Link href="/trenches" className="hover:text-text">{copy.nav.clans}</Link>
-          <Link href="/create" className="hover:text-text">{copy.nav.create}</Link>
-          <Link href="/dashboard" className="hover:text-text hidden sm:inline">{copy.nav.dashboard}</Link>
-        </nav>
+        <NavLinks />
         <div className="ml-auto">
           <WalletButton />
         </div>

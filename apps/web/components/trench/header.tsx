@@ -11,14 +11,15 @@ export function TrenchHeader({ trench, entrants, paidAt, clanTag }: { trench: Tr
   const pill = pillFor(trench);
   return (
     <header className="flex flex-col gap-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="panel p-4 lg:p-6 hairline-top flex items-start justify-between gap-4">
         <div className="flex flex-col gap-3">
           <StatusPill status={pill} />
           <Countdown startAt={trench.startAt} endAt={trench.endAt} status={trench.status} paidAt={paidAt} />
         </div>
         <div className="text-right">
-          <div className="text-small text-muted">{copy.trench.pool}</div>
-          <div className="font-scoreboard text-figure lg:text-[32px] mt-1 tabular">{formatUsd(trench.prizePoolUsdc)}</div>
+          <div className="eyebrow">{copy.trench.pool}</div>
+          <div className="font-scoreboard text-[28px] lg:text-[40px] mt-1 tabular">{formatUsd(trench.prizePoolUsdc)}</div>
+          <div className="text-small text-muted mt-1 tabular">{trench.prizeSplit.join(" / ")}</div>
         </div>
       </div>
       <div>
@@ -32,13 +33,18 @@ export function TrenchHeader({ trench, entrants, paidAt, clanTag }: { trench: Tr
         </p>
         <p className="text-muted mt-1">
           {trench.clanId ? (
-            <Link href={clanTag ? `/trench/${clanTag}` : "/trenches"} className="text-text">{copy.clans.clanBattle}{clanTag ? ` [${clanTag}]` : ""}</Link>
+            <Link href={clanTag ? `/trench/${clanTag}` : "/trenches"} className="text-text">{copy.clans.clanSeason}{clanTag ? ` [${clanTag}]` : ""}</Link>
           ) : (
-            copy.clans.worldBattle
+            copy.clans.worldSeason
           )}
           {" · "}
-          {trench.allowedAssets.map((a) => a.symbol).join(", ")} · {trench.prizeSplit.join("/")} · {copy.discovery.entrants(entrants)}
+          {copy.discovery.entrants(entrants)}
         </p>
+        <ul className="mt-3 flex flex-wrap gap-2" aria-label="Allowed assets">
+          {trench.allowedAssets.map((a) => (
+            <li key={a.address} className="chip">{a.symbol}</li>
+          ))}
+        </ul>
         {trench.description && <p className="mt-4 max-w-[60ch]">{trench.description}</p>}
         <p className="mt-3 text-small">
           <Link href={`/t/${trench.slug}/share`}>{copy.cta.share}</Link>

@@ -52,7 +52,7 @@ export async function identitiesFor(traders: string[]): Promise<Record<string, I
 async function requireVerified(trader: Address): Promise<string> {
   const { db } = services();
   const [v] = await db.select({ nullifierHash: worldVerifications.nullifierHash }).from(worldVerifications).where(eq(worldVerifications.trader, trader.toLowerCase())).orderBy(desc(worldVerifications.verifiedAt)).limit(1);
-  if (!v) throw forbidden("Join a battle and verify with World ID first.");
+  if (!v) throw forbidden("Join a season and verify with World ID first.");
   return v.nullifierHash;
 }
 
@@ -223,7 +223,7 @@ export async function isClanMember(trader: Address, clanId: string): Promise<boo
 
 /* ---------- XP ---------- */
 
-/** XP from volume (all fills), podiums (settled battles) and clan membership; level/title derived. */
+/** XP from volume (all fills), podiums (settled seasons) and clan membership; level/title derived. */
 export async function recomputeXp(trader: Address): Promise<Identity | null> {
   if (!FEATURE_CLANS) return null;
   const { db } = services();

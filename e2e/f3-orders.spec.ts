@@ -29,7 +29,7 @@ test.beforeAll(async ({ request }) => {
 
 async function joinViaMock(page: import("@playwright/test").Page, slug: string) {
   await page.goto(`/t/${slug}`);
-  await page.getByRole("button", { name: "Join this battle" }).click();
+  await page.getByRole("button", { name: "Join this season" }).click();
   await page.getByRole("button", { name: "Verify as human" }).click({ timeout: 60_000 });
   await expect(page.getByText("You're in. Place your first order.")).toBeVisible({ timeout: 120_000 });
 }
@@ -43,11 +43,11 @@ test("F3.3 guards: not entered, not live, asset not allowed, below minimum", asy
 
   const outsider = await q(base, OUTSIDER);
   expect(outsider.status()).toBe(403);
-  expect(((await outsider.json()) as { error: string }).error).toBe("Join the battle before trading.");
+  expect(((await outsider.json()) as { error: string }).error).toBe("Join the season before trading.");
 
   const notLive = await q(base, TRADER, upcoming.id);
   expect(notLive.status()).toBe(409);
-  expect(((await notLive.json()) as { error: string }).error).toBe("This battle isn't live.");
+  expect(((await notLive.json()) as { error: string }).error).toBe("This season isn't live.");
 
   const badAsset = await q({ ...base, asset: DEGEN });
   expect(badAsset.status()).toBe(400);

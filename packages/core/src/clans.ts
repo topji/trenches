@@ -1,6 +1,6 @@
 /**
  * Clans + identity maths (pure, unit-tested).
- * XP: +1 per $100 of fill volume, +100 / +60 / +40 for 1st / 2nd / 3rd in any battle, +25 for being in a clan.
+ * XP: +1 per $100 of fill volume, +100 / +60 / +40 for 1st / 2nd / 3rd in any season, +25 for being in a clan.
  * Clan season score = Σ over members of clamp(member season ROI %, −50, +50) + 20 × podiums by members.
  */
 
@@ -36,7 +36,7 @@ export interface ClanMemberSeason {
   trader: string;
   /** season P&L / peak capital deployed, in percent */
   roiPct: number;
-  /** podium finishes (rank ≤ 3) in settled battles this season */
+  /** podium finishes (rank ≤ 3) in settled seasons this season */
   podiums: number;
 }
 

@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-dvh flex flex-col">
         <Providers demoMode={process.env.DEMO_MODE === "true"}>
           <Nav />
-          <main className="flex-1 w-full max-w-content px-4 py-8 lg:py-12">{children}</main>
+          <main className="flex-1 w-full max-w-content mx-auto px-4 py-8 lg:py-14">{children}</main>
           <Footer />
         </Providers>
       </body>

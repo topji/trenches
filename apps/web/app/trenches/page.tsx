@@ -28,13 +28,13 @@ export default async function ClansPage({ searchParams }: { searchParams: Promis
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-h1">{copy.clans.h1}</h1>
-          <p className="text-muted mt-1">{copy.clans.season(seasonLabel(season))}</p>
+          <p className="text-muted mt-1">{seasonLabel(season)}</p>
         </div>
         <ButtonLink href="/create-trench" size="sm">{copy.clans.create}</ButtonLink>
       </div>
       <nav className="flex gap-2" aria-label="Season">
         {[seasonOf(), prev].filter((s, i, a) => a.indexOf(s) === i).map((s) => (
-          <Link key={s} href={`/trenches?season=${s}`} aria-current={s === season ? "page" : undefined} className={clsx("h-10 px-3 inline-flex items-center rounded-pill border text-small hover:no-underline", s === season ? "border-accent text-text" : "border-line text-muted")}>
+          <Link key={s} href={`/trenches?season=${s}`} aria-current={s === season ? "page" : undefined} className={clsx("chip hover:no-underline", s === season && "chip-active")}>
             {seasonLabel(s)}
           </Link>
         ))}
@@ -54,7 +54,7 @@ export default async function ClansPage({ searchParams }: { searchParams: Promis
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={r.clanId} className="h-14 border-t border-line row-in" style={{ animationDelay: `${Math.min(i, 10) * 120}ms` }}>
+              <tr key={r.clanId} className="h-14 border-t border-line row-in row-hover" style={{ animationDelay: `${Math.min(i, 10) * 120}ms` }}>
                 <td className={clsx("pr-2 font-scoreboard text-figure", rankTone[r.rank - 1] ?? "text-text")}>{r.rank}</td>
                 <td className="pr-2">
                   <Link href={`/trench/${r.tag}`} className="font-semibold">

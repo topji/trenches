@@ -31,11 +31,11 @@ export async function joinTrench(trenchId: string, trader: Address, idkitResult:
   if (!gate.ok) throw new ServiceError(409, gate.reason);
   if (trench.clanId) {
     const { isClanMember } = await import("./clans.js");
-    if (!(await isClanMember(trader, trench.clanId))) throw new ServiceError(403, "This is a Trench battle. Join the Trench first.");
+    if (!(await isClanMember(trader, trench.clanId))) throw new ServiceError(403, "This is an internal season. Join the Trench first.");
   }
 
   const already = await db.select({ trader: entries.trader }).from(entries).where(and(eq(entries.trenchId, trenchId), eq(entries.trader, trader.toLowerCase()))).limit(1);
-  if (already.length) throw conflict("You've already entered this battle.");
+  if (already.length) throw conflict("You've already entered this season.");
 
   const outcome = await verifyIdKitResult(idkitResult, {
     rpId: w.rpId,
@@ -61,7 +61,7 @@ export async function joinTrench(trenchId: string, trader: Address, idkitResult:
     });
   } catch (e) {
     const msg = (e as Error).message ?? "";
-    if (/unique|duplicate key/i.test(msg)) throw conflict("You've already entered this battle.");
+    if (/unique|duplicate key/i.test(msg)) throw conflict("You've already entered this season.");
     throw e;
   }
 

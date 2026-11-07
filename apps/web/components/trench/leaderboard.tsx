@@ -37,7 +37,7 @@ export function Leaderboard({ rows, settled, flash, identities = {} }: { rows: B
             return (
               <tr
                 key={r.trader}
-                className={clsx("h-14 border-t border-line row-in", mine && "border-l-2 border-l-accent", flash?.has(r.trader.toLowerCase()) && "rank-flash")}
+                className={clsx("h-14 border-t border-line row-in row-hover", mine && "border-l-2 border-l-accent", flash?.has(r.trader.toLowerCase()) && "rank-flash")}
                 style={{ animationDelay: `${Math.min(i, 10) * 120}ms` }}
               >
                 <td className={clsx("pr-2 font-scoreboard text-figure", rankTone[r.rank - 1] ?? "text-text")}>{r.rank}</td>

@@ -10,7 +10,7 @@ export class ServiceError extends Error {
   }
 }
 
-export const notFound = (msg = "This battle doesn't exist or the link is wrong.") => new ServiceError(404, msg);
+export const notFound = (msg = "This season doesn't exist or the link is wrong.") => new ServiceError(404, msg);
 export const forbidden = (msg = "Only the host can do this.") => new ServiceError(403, msg);
 export const conflict = (msg: string) => new ServiceError(409, msg);
 export const badRequest = (msg: string, field?: string) => new ServiceError(400, msg, field);

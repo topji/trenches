@@ -113,12 +113,12 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
   return (
     <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-x-12">
       {myClan?.isLeader && (
-        <Field label="Battle" helper={copy.clans.battleKindHelper} className="lg:col-span-2">
-          <div className="flex gap-4" role="radiogroup" aria-label="Battle kind">
+        <Field label="Season" helper={copy.clans.seasonKindHelper} className="lg:col-span-2">
+          <div className="flex gap-4" role="radiogroup" aria-label="Season kind">
             {(["world", "clan"] as const).map((k) => (
               <label key={k} className="inline-flex items-center gap-2 text-small">
                 <input type="radio" name="kind" value={k} checked={kind === k} onChange={() => setKind(k)} className="accent-[var(--accent)]" />
-                {k === "world" ? copy.clans.battleKinds.world : `${copy.clans.battleKinds.clan} [${myClan.tag}]`}
+                {k === "world" ? copy.clans.seasonKinds.world : `${copy.clans.seasonKinds.clan} [${myClan.tag}]`}
               </label>
             ))}
           </div>

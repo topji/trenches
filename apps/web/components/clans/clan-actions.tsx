@@ -8,7 +8,7 @@ import { Field, inputClass } from "@/components/ui/field";
 import { InlineError } from "@/components/ui/inline-error";
 import { Toast } from "@/components/ui/toast";
 
-/** Join / Leave / Create clan battle, depending on who is signed in. */
+/** Join / Leave / Create clan season, depending on who is signed in. */
 export function ClanActions({ clanId, open, members, leader }: { clanId: string; open: boolean; members: string[]; leader: string }) {
   const session = useSession();
   const router = useRouter();
@@ -48,7 +48,7 @@ export function ClanActions({ clanId, open, members, leader }: { clanId: string;
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-small text-muted">{copy.clans.joined}</span>
           {isLeader ? (
-            <ButtonLink href={`/create?clan=${clanId}`} size="sm">{copy.clans.createBattle}</ButtonLink>
+            <ButtonLink href={`/create?clan=${clanId}`} size="sm">{copy.clans.createSeason}</ButtonLink>
           ) : (
             <Button size="sm" variant="secondary" loading={busy} onClick={() => call(`/api/clans/${clanId}/leave`, {}, "Left the clan")}>{copy.clans.leave}</Button>
           )}

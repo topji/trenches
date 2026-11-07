@@ -24,7 +24,7 @@ test.beforeAll(async ({ request }) => {
 async function join(page: import("@playwright/test").Page, who: string, slug: string) {
   await demoSession(page, who);
   await page.goto(`/t/${slug}`);
-  await page.getByRole("button", { name: "Join this battle" }).click();
+  await page.getByRole("button", { name: "Join this season" }).click();
   await page.getByRole("button", { name: "Verify as human" }).click({ timeout: 60_000 });
   await expect(page.getByText("You're in. Place your first order.")).toBeVisible({ timeout: 120_000 });
 }

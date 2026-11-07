@@ -40,7 +40,7 @@ export interface Trench {
   status: TrenchStatus;
   hedera: TrenchHedera;
   sponsor?: TrenchSponsor;
-  /** Set → clan battle (members only); unset → world battle. */
+  /** Set → clan season (members only); unset → global season. */
   clanId?: string;
   createdAt: string;
 }

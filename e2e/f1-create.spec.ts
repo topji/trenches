@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { demoSession, waitForStatus } from "./helpers";
 
 /**
- * F1 Create a battle (ACCEPTANCE_TESTS.md §1 F1.1–F1.4). Hits real testnets (Hedera, Arkiv) and Neon.
+ * F1 Create a season (ACCEPTANCE_TESTS.md §1 F1.1–F1.4). Hits real testnets (Hedera, Arkiv) and Neon.
  * F1.4 uses /api/dev/tick with a pretend clock instead of waiting for the worker's 30 s cron.
  */
 const ADMIN = "0xE5B3DB4a3D4F88C21CF85492222c8B4dDcdc1e87";
@@ -29,17 +29,17 @@ test("F1.2 invalid forms show field-level errors and send nothing", async ({ pag
   const start = new Date(Date.now() + 10 * 60_000);
   await page.getByLabel("Starts").fill(localInput(start));
   await page.getByLabel("Ends").fill(localInput(new Date(start.getTime() - 60_000)));
-  await page.getByRole("button", { name: "Create battle" }).click();
+  await page.getByRole("button", { name: "Create season" }).click();
   await expect(page.getByText("End time must be after start time.")).toBeVisible();
 
   await page.getByLabel("Ends").fill(localInput(new Date(start.getTime() + 30 * 60_000)));
   await page.getByLabel("Rank 3 share").fill("10");
-  await page.getByRole("button", { name: "Create battle" }).click();
+  await page.getByRole("button", { name: "Create season" }).click();
   await expect(page.getByText("Prize split adds up to 90%, needs 100%.")).toBeVisible();
 
   await page.getByLabel("Rank 3 share").fill("20");
   await page.getByRole("button", { name: "WETH", pressed: true }).click(); // deselect the only asset
-  await page.getByRole("button", { name: "Create battle" }).click();
+  await page.getByRole("button", { name: "Create season" }).click();
   await expect(page.getByText("Add at least one asset.")).toBeVisible();
   expect(posted).toBe(0);
 });
@@ -53,12 +53,12 @@ test("F1.1 + F1.3 + F1.4 create, fund, go live", async ({ page }, testInfo) => {
   await page.getByLabel("Starts").fill(localInput(start));
   await page.getByLabel("Ends").fill(localInput(new Date(start.getTime() + 20 * 60_000))); // > 10 min so the pill reads Live, not Ending soon
   await page.screenshot({ path: testInfo.outputPath("create-form.png"), fullPage: true });
-  await page.getByRole("button", { name: "Create battle" }).click();
+  await page.getByRole("button", { name: "Create season" }).click();
 
   // F1.1: draft exists; escrow + topic ids with HashScan links on the funding screen
   await page.waitForURL(/\/create\/[0-9A-Z]+\/fund/, { timeout: 120_000 });
   await expect(page.getByRole("heading", { name: "Fund the prize pool" })).toBeVisible();
-  await expect(page.getByText("Battle created")).toBeVisible();
+  await expect(page.getByText("Season created")).toBeVisible();
   await expect(page.getByText(/^0\.0\.\d+$/).first()).toBeVisible();
   const hashscanLinks = page.getByRole("link", { name: /HashScan/ });
   await expect(hashscanLinks).toHaveCount(2);
@@ -68,7 +68,7 @@ test("F1.1 + F1.3 + F1.4 create, fund, go live", async ({ page }, testInfo) => {
 
   // F1.3: fund → funded, fundingTxId, trench.funded on HCS
   await page.getByRole("button", { name: "Fund escrow" }).click();
-  await expect(page.getByText(/Your battle is live at/)).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByText(/Your season is live at/)).toBeVisible({ timeout: 120_000 });
   await expect(page.getByRole("link", { name: /Funding tx/ })).toHaveAttribute("href", /hashscan\.io\/testnet\/transaction\//);
   await page.screenshot({ path: testInfo.outputPath("funded.png"), fullPage: true });
 
@@ -80,11 +80,11 @@ test("F1.1 + F1.3 + F1.4 create, fund, go live", async ({ page }, testInfo) => {
   expect(body.source).toBe("arkiv");
 
   // Discovery shows it (funded)
-  await page.goto("/battles?status=upcoming");
+  await page.goto("/seasons?status=upcoming");
   await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
 
   // Trench page renders from Arkiv
-  await page.getByRole("link", { name: "Open the battle" }).isVisible().catch(() => {});
+  await page.getByRole("link", { name: "Open the season" }).isVisible().catch(() => {});
   await page.goto(`/t/${body.trench.slug}`);
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   await expect(page.getByText("Upcoming")).toBeVisible();

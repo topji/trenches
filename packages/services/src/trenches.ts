@@ -68,12 +68,12 @@ export async function createTrench(raw: unknown, adminAddress: Address): Promise
   const slug = slugify(input.name);
   const createdAt = new Date().toISOString();
 
-  // Clan battle: only the clan's leader can create one (steps 11–13).
+  // Clan season: only the clan's leader can create one (steps 11–13).
   const clanId = typeof (raw as { clanId?: unknown })?.clanId === "string" && (raw as { clanId: string }).clanId ? (raw as { clanId: string }).clanId : undefined;
   if (clanId) {
     const { clanOf } = await import("./clans.js");
     const mine = await clanOf(adminAddress);
-    if (!mine || mine.id !== clanId || !mine.isLeader) throw forbidden("Only the Trench leader can create a Trench battle.");
+    if (!mine || mine.id !== clanId || !mine.isLeader) throw forbidden("Only the Trench leader can create an internal season.");
   }
 
   // 1. Hedera: escrow account + topic (money and audit log exist before anything is public)
@@ -200,7 +200,7 @@ export async function fundTrench(id: string, actor: Address): Promise<FundResult
   const row = await getTrenchRow(id);
   if (!row) throw notFound();
   if (row.adminAddress !== actor.toLowerCase()) throw forbidden();
-  if (row.status !== "draft") throw conflict("This battle is already funded.");
+  if (row.status !== "draft") throw conflict("This season is already funded.");
   const trench = rowToTrench(row);
 
   const amount = toBaseUnits(trench.prizePoolUsdc);
@@ -213,7 +213,7 @@ export async function fundTrench(id: string, actor: Address): Promise<FundResult
     .set({ status: next, fundingTxId, updatedAt: nowIso })
     .where(and(eq(trenches.id, id), eq(trenches.status, "draft")))
     .returning();
-  if (!claimed) throw conflict("This battle is already funded.");
+  if (!claimed) throw conflict("This season is already funded.");
   const funded = rowToTrench(claimed);
 
   let arkivRes: { arkivTxHash?: string; arkivError?: string } = {};

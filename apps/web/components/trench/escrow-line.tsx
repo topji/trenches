@@ -7,7 +7,7 @@ import { toMirrorId } from "@/lib/server/links";
 /** "Escrow 300.00 USDC on Hedera · HashScan · Results log" plus the Arkiv record. Every id is a link. */
 export function EscrowLine({ trench, balance, arkivEntityKey }: { trench: Trench; balance: number | null; arkivEntityKey: string | null }) {
   return (
-    <div className="border-t border-line pt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-small text-muted">
+    <div className="panel-sunken p-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-small text-muted">
       <span>{balance === null ? copy.trench.escrowUnknown : copy.trench.escrow(balance.toFixed(2))}</span>
       <ExplorerLink href={explorers.hashscanAccount(trench.hedera.escrowAccountId)} label={copy.trench.viewHashscan} hash={trench.hedera.escrowAccountId} />
       <ExplorerLink href={explorers.hashscanTopic(trench.hedera.topicId)} label={copy.trench.resultsLog} hash={trench.hedera.topicId} />

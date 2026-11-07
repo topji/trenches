@@ -20,12 +20,13 @@ const CHIPS: { key: string; label: string; statuses: TrenchStatus[] }[] = [
   { key: "ended", label: copy.discovery.chips.ended, statuses: ["ended", "settled"] },
 ];
 
-function href(status: string, asset: string | null) {
+function href(status: string, asset: string | null, scope: "global" | "internal" = "global") {
   const q = new URLSearchParams();
+  if (scope !== "global") q.set("scope", scope);
   if (status !== "all") q.set("status", status);
   if (asset) q.set("asset", asset);
   const s = q.toString();
-  return s ? `/battles?${s}` : "/battles";
+  return s ? `/seasons?${s}` : "/seasons";
 }
 
 /**
@@ -36,8 +37,9 @@ export default async function TrenchesPage({ searchParams }: { searchParams: Pro
   const q = await searchParams;
   const chip = CHIPS.find((c) => c.key === q.status) ?? CHIPS[0]!;
   const asset = q.asset?.toUpperCase() || null;
+  const scope: "global" | "internal" = q.scope === "internal" ? "internal" : "global";
   const reader = arkivReader();
-  const rows = await reader.listTrenches({ statuses: chip.statuses, ...(asset ? { asset } : {}) });
+  const rows = (await reader.listTrenches({ statuses: chip.statuses, ...(asset ? { asset } : {}), limit: 100 })).filter((t) => (scope === "internal" ? !!t.clanId : !t.clanId));
   rows.sort((a, b) => b.prizePoolUsdc - a.prizePoolUsdc);
   const entrantCounts = await Promise.all(rows.slice(0, 40).map((t) => reader.listEntries(t.id).then((e) => e.length).catch(() => 0)));
   const assetChips = [...new Set(rows.flatMap((t) => t.allowedAssets.map((a) => a.symbol.toUpperCase())))].sort();
@@ -50,13 +52,27 @@ export default async function TrenchesPage({ searchParams }: { searchParams: Pro
         <h1 className="text-h1">{copy.discovery.h1}</h1>
         <ButtonLink href="/create" size="sm">{copy.cta.create}</ButtonLink>
       </div>
+      <div role="tablist" aria-label="Scope" className="flex gap-1 p-1 bg-raised rounded border border-line w-fit">
+        {(["global", "internal"] as const).map((sc) => (
+          <Link
+            key={sc}
+            role="tab"
+            aria-selected={scope === sc}
+            href={href(chip.key, asset, sc)}
+            className={clsx("h-9 px-4 inline-flex items-center rounded text-small hover:no-underline", scope === sc ? "bg-bg text-text border border-line" : "text-muted")}
+          >
+            {copy.discovery.scopes[sc]}
+          </Link>
+        ))}
+      </div>
+      <p className="text-small text-muted -mt-2">{copy.discovery.scopeHelper[scope]}</p>
       <nav className="flex gap-2 overflow-x-auto" aria-label="Filters">
         {CHIPS.map((c) => (
           <Link
             key={c.key}
-            href={href(c.key, asset)}
+            href={href(c.key, asset, scope)}
             aria-current={c.key === chip.key ? "page" : undefined}
-            className={clsx("h-10 px-3 inline-flex items-center rounded-pill border text-small whitespace-nowrap hover:no-underline", c.key === chip.key ? "border-accent text-text" : "border-line text-muted")}
+            className={clsx("chip hover:no-underline", c.key === chip.key && "chip-active")}
           >
             {c.label}
           </Link>
@@ -65,9 +81,9 @@ export default async function TrenchesPage({ searchParams }: { searchParams: Pro
         {assetChips.map((sym) => (
           <Link
             key={sym}
-            href={href(chip.key, asset === sym ? null : sym)}
+            href={href(chip.key, asset === sym ? null : sym, scope)}
             aria-pressed={asset === sym}
-            className={clsx("h-10 px-3 inline-flex items-center rounded-pill border text-small whitespace-nowrap hover:no-underline", asset === sym ? "border-accent text-text" : "border-line text-muted")}
+            className={clsx("chip hover:no-underline", asset === sym && "chip-active")}
           >
             {sym}
           </Link>
@@ -82,7 +98,7 @@ export default async function TrenchesPage({ searchParams }: { searchParams: Pro
             const end = Date.parse(t.endAt);
             const timing = now < start ? copy.discovery.startsIn(formatShortDuration(start - now)) : now < end ? copy.discovery.left(formatShortDuration(end - now)) : copy.trench.countdown.ended;
             return (
-              <li key={t.id} className="border-b border-line">
+              <li key={t.id} className="border-b border-line row-hover">
                 <Link href={`/t/${t.slug}`} className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 py-4 hover:no-underline">
                   <span className="font-semibold">
                     {t.name}

@@ -68,7 +68,15 @@
     @apply text-[48px] lg:text-[72px] tracking-[-0.02em];
   }
   .text-h1 {
-    @apply text-[28px] lg:text-[36px] font-extrabold leading-[1.1] tracking-[-0.01em];
+    @apply text-[30px] lg:text-[40px] font-extrabold leading-[1.05] tracking-[-0.02em];
+  }
+  /* Landing display headline: Archivo slightly expanded, very tight */
+  .text-display {
+    @apply text-[40px] lg:text-[64px] font-extrabold leading-[0.98] tracking-[-0.03em];
+    font-variation-settings: "wdth" 110;
+  }
+  .eyebrow {
+    @apply text-small text-muted;
   }
   .text-h2 {
     @apply text-[20px] lg:text-[24px] font-semibold leading-[1.2];
@@ -84,6 +92,35 @@
   }
   .panel {
     @apply bg-raised border border-line rounded-panel;
+  }
+  .panel-sunken {
+    @apply bg-sunken border border-line rounded-panel;
+  }
+  .chip {
+    @apply inline-flex items-center h-[32px] px-3 rounded-pill border border-line bg-raised text-small text-muted whitespace-nowrap;
+  }
+  .chip-active {
+    @apply border-accent text-text;
+  }
+  .row-hover {
+    @apply transition-colors duration-240 hover:bg-raised/60;
+  }
+  .rank-badge {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-pill font-scoreboard text-[16px] bg-sunken border border-line;
+  }
+  .stat {
+    @apply flex flex-col gap-1;
+  }
+  .stat-figure {
+    @apply font-scoreboard text-[28px] lg:text-[36px] tabular;
+  }
+  .nav-blur {
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+  }
+  .hairline-top {
+    box-shadow: inset 0 1px 0 0 color-mix(in srgb, var(--text) 6%, transparent);
   }
   .hash-block {
     @apply bg-sunken border border-line rounded px-3 py-2 text-mono break-all;

@@ -1,7 +1,7 @@
 /**
- * Step 12: clan ladder. Season = UTC month. For every battle whose startAt falls in the season and
+ * Step 12: clan ladder. Season = UTC month. For every season whose startAt falls in the season and
  * that is live / ended / settled, take the `leaderboard` rows → per member: season P&L, deployed
- * capital (≈ Σ volume / 2, since volume counts both legs), podiums (rank ≤ 3 in settled battles) →
+ * capital (≈ Σ volume / 2, since volume counts both legs), podiums (rank ≤ 3 in settled seasons) →
  * clamp(ROI, ±50) + 20 × podiums → Σ per clan → rank (ties: fewer members first).
  */
 import { clanSeasonScore, computeLeaderboard, rankClans, seasonOf, type Address, type ClanScore, type Fill, type Side } from "@trenches/core";
@@ -36,8 +36,8 @@ export interface MembershipWindow {
 
 /**
  * Per-member season stats **for one Trench**, windowed by membership: only fills placed while the trader
- * was in this Trench count, and only settled battles that ended while they were a member count as podiums.
- * P&L / peak capital come from the same average-cost scoring used for battle boards, run over the window.
+ * was in this Trench count, and only settled seasons that ended while they were a member count as podiums.
+ * P&L / peak capital come from the same average-cost scoring used for season boards, run over the window.
  */
 export async function memberSeasonsFor(clanId: string, season = seasonOf()): Promise<Map<string, MemberSeason>> {
   const { db } = services();

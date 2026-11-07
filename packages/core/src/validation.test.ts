@@ -41,6 +41,6 @@ describe("createTrenchSchema", () => {
   it("demo mode allows a 2-minute Trench", () => {
     const short = { ...valid, startAt: "2026-11-06T10:00:00.000Z", endAt: "2026-11-06T10:02:00.000Z" };
     expect(messages(short, true)).toEqual([]);
-    expect(messages(short)).toContain("A battle must run for at least 10 minutes.");
+    expect(messages(short)).toContain("A season must run for at least 10 minutes.");
   });
 });

@@ -20,14 +20,14 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
   return { title: c ? `[${c.tag}] ${c.name}` : copy.app.name };
 }
 
-/** Clan page: header, members with season ROI and contribution, clan battles, join / leave / create battle. */
+/** Clan page: header, members with season ROI and contribution, clan seasons, join / leave / create season. */
 export default async function ClanPage({ params }: { params: Promise<{ tag: string }> }) {
   const { tag } = await params;
   const clan = await clanByTag(tag);
   if (!clan) notFound();
   const { db } = services();
   const season = seasonOf();
-  const [members, scores, battleRows] = await Promise.all([
+  const [members, scores, seasonRows] = await Promise.all([
     db.select().from(clanMembers).where(eq(clanMembers.clanId, clan.id)),
     ladder(season),
     db.select().from(trenches).where(eq(trenches.clanId, clan.id)).orderBy(desc(trenches.createdAt)).limit(20),
@@ -89,13 +89,13 @@ export default async function ClanPage({ params }: { params: Promise<{ tag: stri
         </table>
       </section>
 
-      <section aria-labelledby="battles-heading">
-        <h2 id="battles-heading" className="text-h2 mb-4">{copy.clans.battles}</h2>
-        {battleRows.length === 0 ? (
-          <p className="text-muted">{copy.clans.noBattles}</p>
+      <section aria-labelledby="seasons-heading">
+        <h2 id="seasons-heading" className="text-h2 mb-4">{copy.clans.seasons}</h2>
+        {seasonRows.length === 0 ? (
+          <p className="text-muted">{copy.clans.noSeasons}</p>
         ) : (
           <ol className="border-t border-line">
-            {battleRows.map((r) => {
+            {seasonRows.map((r) => {
               const b = rowToTrench(r);
               return (
                 <li key={b.id} className="border-b border-line">
