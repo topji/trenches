@@ -14,7 +14,7 @@ import { displayName, type IdentityLite } from "@/lib/identity";
 
 const rankTone = ["text-accent", "text-rank-2", "text-rank-3"];
 
-export function Leaderboard({ rows, settled, flash, identities = {} }: { rows: BoardRow[]; settled?: boolean; flash?: Set<string>; identities?: Record<string, IdentityLite> }) {
+export function Leaderboard({ rows, settled, flash, identities = {}, compact = false }: { rows: BoardRow[]; settled?: boolean; flash?: Set<string>; identities?: Record<string, IdentityLite>; compact?: boolean }) {
   const { address } = useSession();
   const me = address?.toLowerCase();
   if (rows.length === 0) return <EmptyState>{copy.leaderboard.empty}</EmptyState>;
@@ -29,9 +29,9 @@ export function Leaderboard({ rows, settled, flash, identities = {} }: { rows: B
             <th scope="col" className="py-2 pr-2 w-[40px]">{c.rank}</th>
             <th scope="col" className="py-2 pr-2">{c.trader}</th>
             <th scope="col" className="py-2 pr-2 text-right">{c.pnl}</th>
-            <th scope="col" className="py-2 pr-2 text-right">{c.roi}</th>
-            <th scope="col" className="py-2 pr-2 text-right">{c.volume}</th>
-            <th scope="col" className="py-2 text-right hidden sm:table-cell">{c.winRate}</th>
+            {!compact && <th scope="col" className="py-2 pr-2 text-right">{c.roi}</th>}
+            {!compact && <th scope="col" className="py-2 pr-2 text-right">{c.volume}</th>}
+            {!compact && <th scope="col" className="py-2 text-right hidden sm:table-cell">{c.winRate}</th>}
           </tr>
         </thead>
         <tbody>
@@ -60,9 +60,9 @@ export function Leaderboard({ rows, settled, flash, identities = {} }: { rows: B
                   <span className={clsx("font-scoreboard text-figure tabular", r.pnlUsd > 0 ? "text-gain" : r.pnlUsd < 0 ? "text-loss" : "text-text")}>{formatPnl(r.pnlUsd)}</span>
                   <Bar value={Math.abs(r.pnlUsd) / maxAbs} tone={r.pnlUsd < 0 ? "loss" : "gain"} className="mt-1 ml-auto max-w-[96px]" />
                 </td>
-                <td className="pr-2 text-right tabular text-muted text-small">{formatPct(r.roiPct)}</td>
-                <td className="pr-2 text-right tabular text-muted text-small">{formatCompactUsd(r.volumeUsd)}</td>
-                <td className="text-right tabular text-muted text-small hidden sm:table-cell">{r.winRate === null ? "—" : `${Math.round(r.winRate * 100)}%`}</td>
+                {!compact && <td className="pr-2 text-right tabular text-muted text-small">{formatPct(r.roiPct)}</td>}
+                {!compact && <td className="pr-2 text-right tabular text-muted text-small">{formatCompactUsd(r.volumeUsd)}</td>}
+                {!compact && <td className="text-right tabular text-muted text-small hidden sm:table-cell">{r.winRate === null ? "—" : `${Math.round(r.winRate * 100)}%`}</td>}
               </tr>
             );
           })}

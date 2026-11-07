@@ -93,7 +93,7 @@ export default async function LandingPage() {
                 </div>
                 <StatusPill status={pillFor(preview, new Date(now))} />
               </div>
-              <Leaderboard rows={previewRows} />
+              <Leaderboard rows={previewRows} compact />
               <div className="flex items-center justify-between text-small text-muted">
                 <span className="tabular">{copy.discovery.pool(formatUsd(preview.prizePoolUsdc).replace("$", ""))}</span>
                 <Link href={`/t/${preview.slug}`}>Open the season</Link>
