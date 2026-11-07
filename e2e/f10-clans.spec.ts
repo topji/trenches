@@ -1,0 +1,132 @@
+import { expect, test } from "@playwright/test";
+import { createTrenchViaApi, demoHeaders, demoSession, joinViaApi, waitForStatus } from "./helpers";
+
+/**
+ * Clans: create clan → second trader joins → leader creates a clan battle → non-member blocked →
+ * members join → fast-forward → ladder shows the clan with a score. Mocked World proofs, real Arkiv / Hedera.
+ */
+const LEADER = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const MEMBER = "0xcccccccccccccccccccccccccccccccccccccccc";
+const OUTSIDER = "0xdddddddddddddddddddddddddddddddddddddddd";
+const ADMIN = "0xE5B3DB4a3D4F88C21CF85492222c8B4dDcdc1e87";
+
+let tag = "";
+let clanId = "";
+let battleId = "";
+let battleSlug = "";
+
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async ({ request }) => {
+  test.setTimeout(480_000);
+  // Both traders must be verified humans first: join any Trench through the mocked World flow.
+  const warm = await createTrenchViaApi(request, ADMIN, { name: `Clan warm-up ${Date.now().toString(36)}`, startInMs: 20 * 60_000, durationMs: 30 * 60_000, fund: true });
+  await joinViaApi(request, warm.id, LEADER);
+  await joinViaApi(request, warm.id, MEMBER);
+  tag = `C${Date.now().toString(36).slice(-4).toUpperCase()}`.slice(0, 5);
+});
+
+test("create a clan, claim a handle, second trader joins, ladder lists it", async ({ page, request }, testInfo) => {
+  test.slow();
+  await demoSession(page, LEADER);
+  await page.goto("/create-clan");
+  await page.getByLabel("Clan name").fill(`Night Shift ${tag}`);
+  await page.getByLabel("Tag (3–5 letters)").fill(tag);
+  await page.getByLabel("Description").fill("e2e clan");
+  await page.getByRole("button", { name: "Create clan" }).click();
+  await page.waitForURL(new RegExp(`/c/${tag}$`), { timeout: 120_000 });
+  await expect(page.getByRole("heading", { level: 1, name: `Night Shift ${tag}` })).toBeVisible();
+  await expect(page.getByText("You're in this clan.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Create clan battle" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("clan-page.png"), fullPage: true });
+
+  const me = await request.get("/api/me/clan", { headers: demoHeaders(LEADER) });
+  clanId = ((await me.json()) as { clan: { id: string } }).clan.id;
+
+  // handle: one per human, set once
+  const h = await request.post("/api/profile/handle", { headers: demoHeaders(LEADER), data: { handle: `lead_${tag.toLowerCase()}` } });
+  expect(h.status()).toBe(200);
+  const dup = await request.post("/api/profile/handle", { headers: demoHeaders(MEMBER), data: { handle: `lead_${tag.toLowerCase()}` } });
+  expect(dup.status()).toBe(409);
+  expect(((await dup.json()) as { error: string }).error).toBe("Handle taken.");
+
+  // second trader joins (open clan)
+  const j = await request.post(`/api/clans/${clanId}/join`, { headers: demoHeaders(MEMBER), data: {} });
+  expect(j.status()).toBe(201);
+  const again = await request.post(`/api/clans/${clanId}/join`, { headers: demoHeaders(MEMBER), data: {} });
+  expect(again.status()).toBe(409);
+  expect(((await again.json()) as { error: string }).error).toBe(`You're already in [${tag}].`);
+
+  await page.goto("/clans");
+  await expect(page.getByRole("link", { name: new RegExp(`\\[${tag}\\] Night Shift`) })).toBeVisible({ timeout: 60_000 });
+});
+
+test("leader creates a clan battle; a non-member cannot join; members can", async ({ request }) => {
+  test.slow();
+  const now = Date.now();
+  const res = await request.post("/api/trenches", {
+    headers: demoHeaders(LEADER),
+    data: {
+      name: `Clan battle ${tag}`,
+      description: "members only",
+      startAt: new Date(now - 60_000).toISOString(),
+      endAt: new Date(now + 30 * 60_000).toISOString(),
+      allowedAssets: [{ chainId: 8453, address: "0x4200000000000000000000000000000000000006", symbol: "WETH" }],
+      prizePoolUsdc: 1,
+      prizeSplit: [50, 30, 20],
+      entryRule: "open",
+      adminFeeShareBps: 5000,
+      clanId,
+    },
+  });
+  expect(res.status()).toBe(201);
+  const body = (await res.json()) as { trench: { id: string; slug: string; clanId?: string } };
+  expect(body.trench.clanId).toBe(clanId);
+  battleId = body.trench.id;
+  battleSlug = body.trench.slug;
+
+  // an outsider (even verified) cannot create a battle for this clan
+  const forbidden = await request.post("/api/trenches", { headers: demoHeaders(OUTSIDER), data: { name: "x", startAt: new Date(now + 60_000).toISOString(), endAt: new Date(now + 30 * 60_000).toISOString(), allowedAssets: [{ chainId: 8453, address: "0x4200000000000000000000000000000000000006", symbol: "WETH" }], prizePoolUsdc: 1, prizeSplit: [100], entryRule: "open", adminFeeShareBps: 5000, clanId } });
+  expect(forbidden.status()).toBe(403);
+
+  const fund = await request.post(`/api/trenches/${battleId}/fund`, { headers: demoHeaders(LEADER), data: {} });
+  expect(fund.ok()).toBe(true);
+  await waitForStatus(request, battleId, "live");
+
+  await expect(joinViaApi(request, battleId, OUTSIDER)).rejects.toThrow(/403/);
+  await joinViaApi(request, battleId, LEADER);
+  await joinViaApi(request, battleId, MEMBER);
+});
+
+test("clan battle page shows [TAG] handle · title; fast-forward settles and the ladder moves", async ({ page, request }, testInfo) => {
+  test.slow();
+  await page.goto(`/t/${battleSlug}`);
+  await expect(page.getByRole("link", { name: `Clan battle [${tag}]` })).toBeVisible();
+  const leaderRow = page.getByRole("row").filter({ hasText: `[${tag}] lead_${tag.toLowerCase()}` });
+  await expect(leaderRow).toBeVisible({ timeout: 60_000 });
+  await expect(leaderRow).toContainText("Recruit");
+  await page.screenshot({ path: testInfo.outputPath("clan-battle-board.png"), fullPage: true });
+
+  const ff = await request.post("/api/dev/fast-forward", { headers: demoHeaders(ADMIN), data: { trenchId: battleId } });
+  expect(ff.ok()).toBe(true);
+  await waitForStatus(request, battleId, "settled");
+  await request.post("/api/dev/tick", { data: { clans: true } });
+
+  await expect
+    .poll(
+      async () => {
+        const r = await request.get("/api/clans/ladder");
+        const b = (await r.json()) as { rows: { tag: string; podiums: number; score: number }[] };
+        return b.rows.find((x) => x.tag === tag)?.podiums ?? -1;
+      },
+      { timeout: 90_000 },
+    )
+    .toBeGreaterThanOrEqual(2); // leader + member finished 1st and 2nd → two podiums → +40 score
+  await page.goto("/clans");
+  const row = page.getByRole("row").filter({ hasText: `[${tag}]` });
+  await expect(row).toContainText(/\d+\.\d/);
+  await page.screenshot({ path: testInfo.outputPath("ladder.png"), fullPage: true });
+  await page.goto(`/u/${LEADER}`);
+  await expect(page.getByText(/Level \d · \w+/)).toBeVisible();
+  await expect(page.getByText(`[${tag}] lead_${tag.toLowerCase()}`).first()).toBeVisible();
+});

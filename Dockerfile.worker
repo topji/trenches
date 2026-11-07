@@ -1,0 +1,10 @@
+# Worker process (Railway / Fly): pollers, scoring, settlement. Uses the same packages as the web app.
+FROM node:20-slim
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
+COPY apps/worker/package.json apps/worker/
+COPY packages ./packages
+COPY apps/worker ./apps/worker
+RUN pnpm install --frozen-lockfile --filter @trenches/worker... 
+CMD ["pnpm", "--filter", "@trenches/worker", "start"]

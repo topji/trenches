@@ -26,7 +26,9 @@
     "db:generate": "pnpm --filter @trenches/db generate",
     "e2e": "playwright test",
     "dev:tick": "curl -s -X POST http://localhost:3000/api/dev/tick",
-    "smoke:f4": "tsx scripts/f4-smoke.ts"
+    "smoke:f4": "tsx scripts/f4-smoke.ts",
+    "verify": "tsx scripts/verify.ts",
+    "demo": "tsx scripts/e2e-demo.ts"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
