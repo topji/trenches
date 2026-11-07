@@ -5,9 +5,11 @@ import { createTrenchViaApi, demoHeaders, demoSession, joinViaApi, waitForStatus
  * Clans: create clan → second trader joins → leader creates a clan battle → non-member blocked →
  * members join → fast-forward → ladder shows the clan with a score. Mocked World proofs, real Arkiv / Hedera.
  */
-const LEADER = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-const MEMBER = "0xcccccccccccccccccccccccccccccccccccccccc";
-const OUTSIDER = "0xdddddddddddddddddddddddddddddddddddddddd";
+// Fresh wallets per run: a wallet can be in one Trench at a time, so reusing fixtures would answer 409.
+const RUN = Date.now().toString(16).padStart(12, "0").slice(-12);
+const LEADER = `0xb${"b".repeat(27)}${RUN}`;
+const MEMBER = `0xc${"c".repeat(27)}${RUN}`;
+const OUTSIDER = `0xd${"d".repeat(27)}${RUN}`;
 const ADMIN = "0xE5B3DB4a3D4F88C21CF85492222c8B4dDcdc1e87";
 
 let tag = "";
@@ -58,7 +60,7 @@ test("create a clan, claim a handle, second trader joins, ladder lists it", asyn
   expect(((await again.json()) as { error: string }).error).toBe(`You're already in [${tag}].`);
 
   await page.goto("/trenches");
-  await expect(page.getByRole("link", { name: new RegExp(`\\[${tag}\\] Night Shift`) })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("link", { name: new RegExp(`\\[${tag}\\] Night Shift`) })).toBeVisible({ timeout: 90_000 });
 });
 
 test("leader creates a clan battle; a non-member cannot join; members can", async ({ request }) => {

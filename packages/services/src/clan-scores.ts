@@ -141,13 +141,20 @@ export async function ladder(season = seasonOf()): Promise<LadderRow[]> {
   if (!scores.length) {
     scores = (await db.select().from(clanScores).where(eq(clanScores.season, season))).map((r) => ({ clanId: r.clanId, season: r.season, score: Number(r.score), rank: r.rank, podiums: r.podiums, members: r.members, computedAt: new Date(r.computedAt).toISOString() }));
   }
-  return scores
+  const scored = scores
     .filter((s) => clansById.has(s.clanId))
     .sort((a, b) => a.rank - b.rank)
     .map((s) => {
       const c = clansById.get(s.clanId)!;
       return { ...s, name: c.name, tag: c.tag, leader: c.leader as Address };
     });
+  // Trenches without a score row yet (founded since the last recompute) sit at 0 after the scored ones.
+  const seen = new Set(scored.map((s) => s.clanId));
+  const fresh = [...clansById.values()]
+    .filter((c) => !seen.has(c.id))
+    .sort((a, b) => a.memberCount - b.memberCount || Date.parse(String(a.createdAt)) - Date.parse(String(b.createdAt)))
+    .map((c, i) => ({ clanId: c.id, season, score: 0, rank: scored.length + i + 1, podiums: 0, members: c.memberCount, computedAt: new Date(c.createdAt).toISOString(), name: c.name, tag: c.tag, leader: c.leader as Address }));
+  return [...scored, ...fresh];
 }
 
 export const seasonBoundsOf = seasonBounds;
