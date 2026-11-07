@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { copy } from "@/lib/copy";
 import type { BoardRow } from "@/lib/board";
+import type { IdentityLite } from "@/lib/identity";
 import { useSession } from "@/lib/session";
 import { Leaderboard } from "./leaderboard";
 
@@ -11,9 +12,10 @@ const POLL_MS = 15_000;
  * F4: server-rendered rows from Arkiv, then polled every 15 s from the public leaderboard route.
  * Rows whose rank changed flash for 1.5 s; the caller's own move is announced in a polite live region.
  */
-export function LiveBoard({ trenchId, initialRows, settled, live }: { trenchId: string; initialRows: BoardRow[]; settled?: boolean; live: boolean }) {
+export function LiveBoard({ trenchId, initialRows, initialIdentities = {}, settled, live }: { trenchId: string; initialRows: BoardRow[]; initialIdentities?: Record<string, IdentityLite>; settled?: boolean; live: boolean }) {
   const session = useSession();
   const [rows, setRows] = useState<BoardRow[]>(initialRows);
+  const [identities, setIdentities] = useState<Record<string, IdentityLite>>(initialIdentities);
   const [flash, setFlash] = useState<Set<string>>(new Set());
   const [announce, setAnnounce] = useState("");
   const ranks = useRef(new Map(initialRows.map((r) => [r.trader.toLowerCase(), r.rank])));
@@ -25,7 +27,8 @@ export function LiveBoard({ trenchId, initialRows, settled, live }: { trenchId: 
       try {
         const res = await fetch(`/api/trenches/${trenchId}/leaderboard`, { cache: "no-store" });
         if (!res.ok || stopped) return;
-        const body = (await res.json()) as { rows: BoardRow[] };
+        const body = (await res.json()) as { rows: BoardRow[]; identities?: Record<string, IdentityLite> };
+        if (body.identities) setIdentities(body.identities);
         const moved = new Set<string>();
         for (const r of body.rows) {
           const key = r.trader.toLowerCase();
@@ -56,7 +59,7 @@ export function LiveBoard({ trenchId, initialRows, settled, live }: { trenchId: 
 
   return (
     <>
-      <Leaderboard rows={rows} settled={settled} flash={flash} />
+      <Leaderboard rows={rows} settled={settled} flash={flash} identities={identities} />
       <p className="sr-only" aria-live="polite" role="status">{announce}</p>
     </>
   );

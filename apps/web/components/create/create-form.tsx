@@ -1,7 +1,8 @@
 "use client";
 import { createTrenchSchema } from "@trenches/core";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { clsx } from "clsx";
 import { copy } from "@/lib/copy";
@@ -21,6 +22,24 @@ function toLocalInput(d: Date): string {
 export function CreateForm({ demoMode }: { demoMode: boolean }) {
   const router = useRouter();
   const session = useSession();
+  const search = useSearchParams();
+  const [myClan, setMyClan] = useState<{ id: string; tag: string; isLeader: boolean } | null>(null);
+  const [kind, setKind] = useState<"world" | "clan">(search.get("clan") ? "clan" : "world");
+  useEffect(() => {
+    if (!session.authenticated) return;
+    let cancelled = false;
+    session
+      .authHeaders()
+      .then((h) => fetch("/api/me/clan", { headers: h, cache: "no-store" }))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b: { clan?: { id: string; tag: string; isLeader: boolean } | null } | null) => {
+        if (!cancelled && b?.clan) setMyClan(b.clan);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [startAt, setStartAt] = useState(() => toLocalInput(new Date(Date.now() + (demoMode ? 2 : 10) * 60_000)));
@@ -47,6 +66,7 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
       prizeSplit: split.map((s) => Number(s) || 0),
       entryRule,
       adminFeeShareBps: Math.round(Number(feeShare) * 100),
+      ...(kind === "clan" && myClan?.isLeader ? { clanId: myClan.id } : {}),
     };
   }
 
@@ -92,6 +112,18 @@ export function CreateForm({ demoMode }: { demoMode: boolean }) {
   const f = copy.create.fields;
   return (
     <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-x-12">
+      {myClan?.isLeader && (
+        <Field label="Battle" helper={copy.clans.battleKindHelper} className="lg:col-span-2">
+          <div className="flex gap-4" role="radiogroup" aria-label="Battle kind">
+            {(["world", "clan"] as const).map((k) => (
+              <label key={k} className="inline-flex items-center gap-2 text-small">
+                <input type="radio" name="kind" value={k} checked={kind === k} onChange={() => setKind(k)} className="accent-[var(--accent)]" />
+                {k === "world" ? copy.clans.battleKinds.world : `${copy.clans.battleKinds.clan} [${myClan.tag}]`}
+              </label>
+            ))}
+          </div>
+        </Field>
+      )}
       <Field label={f.name} htmlFor="name" error={errors.name} className="lg:col-span-2">
         <input id="name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} autoComplete="off" />
       </Field>

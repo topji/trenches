@@ -7,7 +7,7 @@ import { Countdown } from "./countdown";
 import Link from "next/link";
 
 /** Trench page header: countdown is the hero, pool beside it (DESIGN_SYSTEM §4 skeleton). */
-export function TrenchHeader({ trench, entrants, paidAt }: { trench: Trench; entrants: number; paidAt?: string }) {
+export function TrenchHeader({ trench, entrants, paidAt, clanTag }: { trench: Trench; entrants: number; paidAt?: string; clanTag?: string | null }) {
   const pill = pillFor(trench);
   return (
     <header className="flex flex-col gap-6">
@@ -31,6 +31,12 @@ export function TrenchHeader({ trench, entrants, paidAt }: { trench: Trench; ent
           {trench.sponsor && <span> · {copy.trench.sponsor(trench.sponsor.name)}</span>}
         </p>
         <p className="text-muted mt-1">
+          {trench.clanId ? (
+            <Link href={clanTag ? `/c/${clanTag}` : "/clans"} className="text-text">{copy.clans.clanBattle}{clanTag ? ` [${clanTag}]` : ""}</Link>
+          ) : (
+            copy.clans.worldBattle
+          )}
+          {" · "}
           {trench.allowedAssets.map((a) => a.symbol).join(", ")} · {trench.prizeSplit.join("/")} · {copy.discovery.entrants(entrants)}
         </p>
         {trench.description && <p className="mt-4 max-w-[60ch]">{trench.description}</p>}

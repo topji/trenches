@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { arkivReader, escrowBalance, getTrenchRowBySlug, listHcs } from "@trenches/services";
+import { arkivReader, escrowBalance, getTrenchRowBySlug, identitiesFor, listHcs, services } from "@trenches/services";
+import { clans, eq } from "@trenches/db";
 import { paidAtOf, rowToTrench } from "@trenches/db";
 import { copy } from "@/lib/copy";
 import { canJoin, canTrade } from "@trenches/core";
@@ -28,7 +29,9 @@ async function load(slug: string) {
     listHcs(trench.id),
     trench.status === "settled" ? reader.listPayouts(trench.id).catch(() => []) : Promise.resolve([]),
   ]);
-  return { trench, entries, lb, balance, hcs, payouts, paidAt: row ? paidAtOf(row) : undefined, arkivEntityKey: onArkiv?.entityKey ?? row?.arkivEntityKey ?? null, source: onArkiv ? "arkiv" : "postgres" };
+  const identities = await identitiesFor(entries.map((e) => e.trader)).catch(() => ({}));
+  const clanTag = trench.clanId ? (await services().db.select({ tag: clans.tag }).from(clans).where(eq(clans.id, trench.clanId)).limit(1))[0]?.tag ?? null : null;
+  return { trench, entries, lb, balance, hcs, payouts, identities, clanTag, paidAt: row ? paidAtOf(row) : undefined, arkivEntityKey: onArkiv?.entityKey ?? row?.arkivEntityKey ?? null, source: onArkiv ? "arkiv" : "postgres" };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -42,21 +45,21 @@ export default async function TrenchPage({ params }: { params: Promise<{ slug: s
   const { slug } = await params;
   const data = await load(slug);
   if (!data) notFound();
-  const { trench, entries, lb, balance, hcs, payouts, paidAt, arkivEntityKey } = data;
+  const { trench, entries, lb, balance, hcs, payouts, identities, clanTag, paidAt, arkivEntityKey } = data;
   const gate = canJoin(trench);
   const live = canTrade(trench).ok;
   const rows = mergeBoard(lb, entries);
 
   return (
     <div className="flex flex-col gap-8 lg:gap-12">
-      <TrenchHeader trench={trench} entrants={entries.length} paidAt={paidAt} />
+      <TrenchHeader trench={trench} entrants={entries.length} paidAt={paidAt} clanTag={clanTag} />
 
       <JoinPanel trenchId={trench.id} entrants={entries.map((e) => e.trader)} disabledReason={gate.ok ? null : gate.reason} />
       <TradePanel trenchId={trench.id} assets={trench.allowedAssets} entrants={entries.map((e) => e.trader)} live={live} />
 
       <section aria-labelledby="board-heading">
         <h2 id="board-heading" className="sr-only">Leaderboard</h2>
-        <LiveBoard trenchId={trench.id} initialRows={rows} settled={trench.status === "settled"} live={live} />
+        <LiveBoard trenchId={trench.id} initialRows={rows} initialIdentities={identities} settled={trench.status === "settled"} live={live} />
       </section>
 
       {trench.status === "settled" && <Payouts rows={payouts} />}

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { profileFor } from "@trenches/services";
+import { identitiesFor, profileFor, type Identity } from "@trenches/services";
+import { levelFor } from "@trenches/core";
+import { IdentityCard } from "@/components/profile/identity-card";
 import { copy } from "@/lib/copy";
 import { formatCompactUsd, formatPnl, shortAddress } from "@/lib/format";
 import { ButtonLink } from "@/components/ui/button";
@@ -22,6 +24,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ addres
   const { address } = await params;
   if (!/^0x[0-9a-fA-F]{40}$/.test(address)) notFound();
   const view = await profileFor(address as `0x${string}`);
+  const ids: Record<string, Identity> = await identitiesFor([address]).catch(() => ({}));
+  const identity = ids[address.toLowerCase()] ?? null;
+  const lv = levelFor(identity?.xp ?? 0);
   const s = copy.profile.stats;
   const c = copy.profile.columns;
   const stats = [
@@ -33,10 +38,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ addres
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
-        <h1 className="text-h1 font-mono inline-flex items-center gap-3">
-          {shortAddress(address)}
+        <h1 className={`text-h1 inline-flex items-center gap-3 ${identity?.handle ? "" : "font-mono"}`}>
+          {identity?.handle ? `${identity.tag ? `[${identity.tag}] ` : ""}${identity.handle}` : shortAddress(address)}
           {view.totals.verifiedHuman ? <HumanBadge /> : <span className="text-small text-faint font-sans">{copy.profile.notVerified}</span>}
         </h1>
+        <IdentityCard address={address} identity={identity} nextXp={lv.nextXp} progress={lv.progress} />
         <dl className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((st) => (
             <div key={st.label} className="panel px-4 py-3">

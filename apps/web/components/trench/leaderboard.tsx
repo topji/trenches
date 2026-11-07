@@ -3,15 +3,16 @@
 import { clsx } from "clsx";
 import Link from "next/link";
 import { copy } from "@/lib/copy";
-import { formatCompactUsd, formatPct, formatPnl, shortAddress } from "@/lib/format";
+import { formatCompactUsd, formatPct, formatPnl } from "@/lib/format";
 import { useSession } from "@/lib/session";
 import { HumanBadge } from "@/components/ui/human-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { BoardRow } from "@/lib/board";
+import { displayName, type IdentityLite } from "@/lib/identity";
 
 const rankTone = ["text-accent", "text-rank-2", "text-rank-3"];
 
-export function Leaderboard({ rows, settled, flash }: { rows: BoardRow[]; settled?: boolean; flash?: Set<string> }) {
+export function Leaderboard({ rows, settled, flash, identities = {} }: { rows: BoardRow[]; settled?: boolean; flash?: Set<string>; identities?: Record<string, IdentityLite> }) {
   const { address } = useSession();
   const me = address?.toLowerCase();
   if (rows.length === 0) return <EmptyState>{copy.leaderboard.empty}</EmptyState>;
@@ -41,8 +42,11 @@ export function Leaderboard({ rows, settled, flash }: { rows: BoardRow[]; settle
               >
                 <td className={clsx("pr-2 font-scoreboard text-figure", rankTone[r.rank - 1] ?? "text-text")}>{r.rank}</td>
                 <td className="pr-2">
-                  <span className="inline-flex items-center gap-2">
-                    <Link href={`/u/${r.trader}`} className="font-mono text-[13px]">{shortAddress(r.trader)}</Link>
+                  <span className="inline-flex items-center gap-2 flex-wrap">
+                    <Link href={`/u/${r.trader}`} className={identities[r.trader.toLowerCase()]?.handle ? "font-semibold" : "font-mono text-[13px]"}>
+                      {displayName(r.trader, identities[r.trader.toLowerCase()])}
+                    </Link>
+                    {identities[r.trader.toLowerCase()]?.handle && <span className="text-small text-muted">· {identities[r.trader.toLowerCase()]!.title}</span>}
                     <HumanBadge />
                     {mine && <span className="text-small text-accent">{copy.leaderboard.you}</span>}
                   </span>

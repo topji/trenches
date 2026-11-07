@@ -1,4 +1,4 @@
-import { arkivReader } from "@trenches/services";
+import { arkivReader, identitiesFor } from "@trenches/services";
 import { NextResponse } from "next/server";
 import { handle } from "@/lib/server/http";
 import { mergeBoard } from "@/lib/board";
@@ -13,7 +13,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     const reader = arkivReader();
     const [lb, entrants] = await Promise.all([reader.getLeaderboard(id), reader.listEntries(id)]);
     const rows = mergeBoard(lb, entrants);
+    const identities = await identitiesFor(rows.map((r) => r.trader));
     const computedAt = lb.reduce<string | null>((acc, r) => (!acc || r.computedAt > acc ? r.computedAt : acc), null);
-    return NextResponse.json({ rows, computedAt, source: "arkiv" }, { headers: { "cache-control": "no-store" } });
+    return NextResponse.json({ rows, identities, computedAt, source: "arkiv" }, { headers: { "cache-control": "no-store" } });
   });
 }
