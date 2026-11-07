@@ -1,4 +1,4 @@
-import { activateTrenches } from "@trenches/services";
+import { activateTrenches, recomputeClanScores } from "@trenches/services";
 import { NextResponse, type NextRequest } from "next/server";
 import { handle, readJson } from "@/lib/server/http";
 
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
     const now = typeof body.now === "string" ? new Date(body.now) : new Date();
     const only = typeof body.trenchId === "string" ? body.trenchId : undefined;
     const transitions = await activateTrenches(now, only);
-    return NextResponse.json({ now: now.toISOString(), transitions });
+    const ladder = body.clans === true ? await recomputeClanScores() : undefined;
+    return NextResponse.json({ now: now.toISOString(), transitions, ladder });
   });
 }

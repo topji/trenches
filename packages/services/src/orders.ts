@@ -324,6 +324,7 @@ export async function pollOrders(): Promise<PollResult> {
   let closed = 0;
   let hadError = false;
   const touched = new Set<string>();
+  const touchedTraders = new Set<string>();
 
   for (const o of open) {
     try {
@@ -355,6 +356,7 @@ export async function pollOrders(): Promise<PollResult> {
         if (inserted.length) {
           newFills += 1;
           touched.add(o.trenchId);
+          touchedTraders.add(o.trader);
           // Our integrator fee on this fill, split between platform and host by adminFeeShareBps (F3.5).
           const { platformUsd, adminUsd } = splitFee(Number(ff.integratorFeeNotional), adminFeeShareBps);
           await db.insert(feeLedger).values({ trenchId: o.trenchId, fillId: fill.id, admin, platformUsd: platformUsd.toFixed(6), adminUsd: adminUsd.toFixed(6), createdAt: new Date().toISOString() });
@@ -388,6 +390,10 @@ export async function pollOrders(): Promise<PollResult> {
     } catch (e) {
       log.error({ trenchId, err: (e as Error).message }, "recompute after fill failed");
     }
+  }
+  if (touchedTraders.size) {
+    const { recomputeXp } = await import("./clans.js");
+    for (const t of touchedTraders) await recomputeXp(t as Address).catch(() => undefined);
   }
   return { polled: open.length, newFills, closed };
 }

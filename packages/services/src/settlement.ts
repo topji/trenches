@@ -173,6 +173,15 @@ export async function settleTrench(trenchId: string, now = new Date()): Promise<
     log.error({ trenchId, err: out.arkivError }, "arkiv settlement write failed");
   }
   log.info({ trenchId, slug: trench.slug, winners: winners.length, payoutTxId, scheduleId: feeShare.scheduleId }, "trench settled");
+  // Identity layer: podium XP + clan ladder reflect the result right away.
+  try {
+    const { recomputeXp } = await import("./clans.js");
+    const { recomputeClanScores } = await import("./clan-scores.js");
+    for (const w of winners) await recomputeXp(w.trader).catch(() => undefined);
+    await recomputeClanScores().catch(() => undefined);
+  } catch {
+    /* clans disabled */
+  }
   return out;
 }
 

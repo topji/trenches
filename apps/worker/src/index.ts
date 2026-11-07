@@ -1,7 +1,7 @@
 import "dotenv/config";
 import cron from "node-cron";
 import pino from "pino";
-import { activateTrenches, pollOrders, recomputeLeaderboards, refreshProfiles, settleTrenches } from "@trenches/services";
+import { activateTrenches, pollOrders, recomputeClanScores, recomputeLeaderboards, refreshProfiles, settleTrenches } from "@trenches/services";
 
 /**
  * Worker process: pollers, scoring, settlement.
@@ -49,6 +49,15 @@ const jobs: { name: string; schedule: string; run: () => Promise<unknown> }[] = 
     run: async () => {
       const r = await refreshProfiles();
       if (r.updated) log.info(r, "profiles refreshed");
+      return r;
+    },
+  },
+  {
+    name: "recomputeClanScores",
+    schedule: "50 * * * * *",
+    run: async () => {
+      const r = await recomputeClanScores();
+      if (r.clans && r.arkivTx) log.info(r, "clan ladder updated");
       return r;
     },
   },
