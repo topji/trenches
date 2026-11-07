@@ -103,7 +103,10 @@
     @apply border-accent text-text;
   }
   .row-hover {
-    @apply transition-colors duration-240 hover:bg-raised/60;
+    @apply transition-colors duration-240;
+  }
+  .row-hover:hover {
+    background: color-mix(in srgb, var(--bg-raised) 60%, transparent);
   }
   .rank-badge {
     @apply inline-flex items-center justify-center w-8 h-8 rounded-pill font-scoreboard text-[16px] bg-sunken border border-line;
