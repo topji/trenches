@@ -1,5 +1,13 @@
 # PROGRESS.md — newest first
 
+## Sat 7 Nov 2026, 07:05 IST — Trenches are the groups, battles are the competitions; all specs green on the production build
+
+- **Naming flipped on the builder's call:** the group (one leader, members, season score) is the **Trench**; the competition is a **battle** (Trench battle = members only, world battle = any verified human). Routes: `/trenches` (ladder), `/trench/[tag]`, `/create-trench`, `/battles` (discovery), `/t/[slug]` (battle), `/create` (battle). Code identifiers keep `clan*`; every UI string, server message, spec and doc says Trench / battle.
+- **Membership windows:** `clan_memberships` keeps joined_at / left_at history. A member's season ROI, volume and podiums are computed from the fills placed and the battles settled *while they were in that Trench* (`memberSeasonsFor` runs the average-cost scoring over the window), so leaving and joining moves only future results. Anyone may leave; a leaving leader hands over to the longest-standing member; the last member leaving deletes the Trench.
+- Green on `next build && next start`: `f2-join` (5/5), `f6-f9-rest` (4/4), `f10-clans` (3/3). Earlier today: `f1`, `f3`, `f4`, `f5` green.
+- Fixes found by the reruns: the live board kept stale client rows after a join (now adopts refreshed server rows); profile entities created before the identity columns reject a patch on Arkiv (now replaced); XP / profile sync is fire-and-forget on create / join / handle so responses stay fast; the ladder lists newly founded Trenches at 0 before their first score row; the landing "Live battles" strip now reads the Arkiv discovery query (it had been a placeholder since step 1).
+- Deploy: blocked on accounts (Vercel project for `apps/web`, Railway/Fly for the worker). `docs/deploy.md` has the steps; `pnpm demo` rehearses against any URL.
+
 ## Sat 7 Nov 2026, 07:05 IST — Steps 8 and 11–14: nine features present, clans + identity layer, paperwork
 
 **Step 8 (F6–F9)**
