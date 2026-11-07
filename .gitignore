@@ -9,3 +9,5 @@ test-results
 .DS_Store
 playwright-report
 scripts/shots
+.vercel
+.env*
