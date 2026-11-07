@@ -23,7 +23,7 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } },
   ],
   webServer: {
-    command: "pnpm dev",
+    command: "pnpm --filter @trenches/web start",
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120_000,
