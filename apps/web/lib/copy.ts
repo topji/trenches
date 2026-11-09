@@ -148,6 +148,11 @@ export const copy = {
     postToX: "Post to X",
     empty: "You haven't hosted a season yet.",
     signIn: "Sign in to see the seasons you host.",
+    exportWallet: {
+      title: "Your wallet key",
+      body: "Your Trenches wallet is a Privy embedded wallet. Export its private key to import it into MetaMask or Rabby and move your funds anywhere. Anyone with this key controls the wallet, so never share it.",
+      cta: "Export wallet key",
+    },
     pending: (sponsor: string, symbol: string) => `${sponsor} proposed ${symbol} as the allowed asset.`,
     accept: "Accept",
     keep: "Keep current",
